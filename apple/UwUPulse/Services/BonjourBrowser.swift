@@ -99,7 +99,7 @@ final class BonjourBrowser {
         let finished = Mutex(false)
 
         return await withCheckedContinuation { (continuation: CheckedContinuation<(host: String, port: Int)?, Never>) in
-            @Sendable func finish(_ value: (host: String, port: Int)?) {
+            let finish: @Sendable ((host: String, port: Int)?) -> Void = { value in
                 let first = finished.withLock { done -> Bool in
                     defer { done = true }
                     return !done
@@ -123,7 +123,7 @@ final class BonjourBrowser {
                 }
             }
             connection.start(queue: .global(qos: .userInitiated))
-            Task {
+            Task { @Sendable in
                 try? await Task.sleep(for: timeout)
                 finish(nil)
             }
