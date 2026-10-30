@@ -1,0 +1,22 @@
+{
+  "name": "uwupulse",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @uwupulse/desktop dev",
+    "tauri": "pnpm --filter @uwupulse/desktop tauri",
+    "build": "pnpm --filter @uwupulse/desktop build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --if-present test",
+    "lint": "prettier --check . && node scripts/check-i18n.mjs",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}

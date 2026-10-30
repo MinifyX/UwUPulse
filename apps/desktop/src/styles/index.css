@@ -1,0 +1,11 @@
+/*
+ * The suite first (Tailwind, @uwusuite/design tokens, UwU Sans, base, motion,
+ * Nyu, title bar), then UwUPulse's own sheet in the components layer, built
+ * from the package's tokens, so a utility class always wins over it.
+ */
+@import 'tailwindcss';
+@import '@uwusuite/design/tailwind.css';
+
+@source '../';
+
+@import './app.css' layer(components);

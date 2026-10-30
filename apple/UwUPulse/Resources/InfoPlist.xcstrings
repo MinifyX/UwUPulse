@@ -1,0 +1,102 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse"
+          }
+        }
+      }
+    },
+    "NSBluetoothAlwaysUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse verbindet sich mit Bluetooth-Herzfrequenz-Brustgurten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse connects to Bluetooth heart rate chest straps."
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse nutzt die Kamera, um den Kopplungs-QR-Code der Desktop-App zu scannen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse uses the camera to scan the pairing QR code shown by the desktop app."
+          }
+        }
+      }
+    },
+    "NSHealthShareUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse liest während eines Live-Trainings deine Herzfrequenz, um sie an deinen Computer weiterzuleiten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse reads your heart rate during a live workout to forward it to your computer."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse startet ein Training auf deiner Apple Watch, um deine Herzfrequenz zu messen. Nichts wird in Health gespeichert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse starts a workout on your Apple Watch to measure your heart rate. Nothing is saved to Health."
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse findet deinen Computer im lokalen Netzwerk und sendet deine Herzfrequenz direkt dorthin."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse finds your computer on the local network and sends your heart rate to it directly."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

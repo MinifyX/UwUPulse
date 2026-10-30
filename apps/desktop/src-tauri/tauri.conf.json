@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "UwUPulse",
+  "version": "0.1.0",
+  "identifier": "app.uwupulse.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "UwUPulse",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "decorations": false,
+        "shadow": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data:",
+        "font-src": "'self' data:",
+        "connect-src": "ipc: http://ipc.localhost http://127.0.0.1:* ws://127.0.0.1:*",
+        "frame-src": "http://127.0.0.1:* http://localhost:*",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      },
+      "freezePrototype": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "deb", "rpm", "appimage", "nsis"],
+    "publisher": "UwUPulse",
+    "homepage": "https://github.com/MinifyX/UwUPulse",
+    "category": "HealthcareAndFitness",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "copyright": "MIT",
+    "license": "MIT",
+    "shortDescription": "Live heart rate overlay for streams",
+    "longDescription": "Shows your heart rate from an Apple Watch (through the iPhone app) or a Bluetooth chest strap as an overlay for OBS and other streaming tools, and records sessions.",
+    "linux": {
+      "deb": { "desktopTemplate": "linux/uwupulse.desktop" },
+      "rpm": { "desktopTemplate": "linux/uwupulse.desktop" }
+    }
+  }
+}

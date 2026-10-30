@@ -1,0 +1,8 @@
+dist/
+target/
+pnpm-lock.yaml
+apps/*/src-tauri/gen/
+apple/
+.claude/
+*.md
+docs/protocol-vectors.json

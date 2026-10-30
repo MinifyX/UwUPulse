@@ -1,0 +1,50 @@
+name: Apple
+
+# PulseKit's tests (including the protocol vectors the Rust side writes) and
+# unsigned simulator builds of the iPhone and Watch apps. Only when the Apple
+# code or the shared vectors change; signed builds for TestFlight and the App
+# Store come from apple/scripts on a Mac with the signing setup.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apple/**'
+      - 'docs/protocol-vectors.json'
+      - '.github/workflows/apple.yml'
+  pull_request:
+    paths:
+      - 'apple/**'
+      - 'docs/protocol-vectors.json'
+      - '.github/workflows/apple.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pulsekit:
+    name: PulseKit tests
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: swift test
+        working-directory: apple/PulseKit
+
+  apps:
+    name: Simulator builds
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: brew install xcodegen
+      - run: apple/scripts/build.sh

@@ -1,0 +1,23 @@
+{
+  "Aufnahme {time}": "Recording {time}",
+  "Brustgurt": "Chest strap",
+  "Der Kern antwortet nicht: {reason}": "The core is not responding: {reason}",
+  "Der Verlauf erscheint, sobald Werte kommen.": "The history appears as soon as values arrive.",
+  "Die Watch hat nicht reagiert: {reason}": "The watch did not respond: {reason}",
+  "Empfängt Werte": "Receiving values",
+  "Herzfrequenz der letzten {n} Minuten": "Heart rate of the last {n} minutes",
+  "Keine Aufnahme": "Not recording",
+  "Keine Quelle verbunden": "No source connected",
+  "Kopple dein iPhone mit der Watch oder verbinde einen Brustgurt.": "Pair your iPhone with the watch or connect a chest strap.",
+  "Noch kein Wert empfangen": "No value received yet",
+  "Noch keine Quelle": "No source yet",
+  "Quellen": "Sources",
+  "Stoppen": "Stop",
+  "Verbunden, wartet auf Werte": "Connected, waiting for values",
+  "Verlauf": "History",
+  "Watch starten": "Start watch",
+  "Workout wird beendet …": "Ending workout …",
+  "Workout wird gestartet …": "Starting workout …",
+  "Zeitraum": "Time range",
+  "Zu den Geräten": "Go to devices"
+}

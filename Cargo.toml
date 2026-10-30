@@ -1,0 +1,49 @@
+[workspace]
+resolver = "2"
+members = ["crates/*", "apps/desktop/src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/MinifyX/UwUPulse"
+
+[workspace.dependencies]
+uwupulse-proto = { path = "crates/uwupulse-proto" }
+uwupulse-core = { path = "crates/uwupulse-core", default-features = false }
+
+log = "0.4"
+parking_lot = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "macros", "net"] }
+uuid = { version = "1", features = ["v4"] }
+
+# The link's crypto: X25519, HKDF-SHA256, ChaCha20-Poly1305. The RustCrypto
+# generation that shares one `digest`, so nothing is compiled twice.
+base64 = "0.22"
+chacha20poly1305 = "0.10"
+getrandom = "0.3"
+hkdf = "0.12"
+sha2 = "0.10"
+subtle = "2.6"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+
+[profile.dev]
+opt-level = 1
+# Line numbers for backtraces, no more: a smaller target/ and faster linking.
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+opt-level = 3
+debug = false
+
+[profile.release]
+# Thin LTO with the default codegen units: nearly the size of fat LTO at a
+# fraction of the link time in CI.
+lto = "thin"
+opt-level = "s"
+# No panic = "abort": the server runs in tasks, and a bug in one request
+# should end that task, not the app.
+strip = true

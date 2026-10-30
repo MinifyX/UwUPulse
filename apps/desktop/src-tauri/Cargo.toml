@@ -1,0 +1,30 @@
+[package]
+name = "uwupulse-desktop"
+description = "UwUPulse desktop app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "uwupulse_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+uwupulse-core = { workspace = true, features = ["ble"] }
+
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2", features = [] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
+tauri-plugin-opener = "2"
+# One UwUPulse per user: the server owns its port, a second copy could only
+# fail to bind it. A second start focuses the first window instead.
+tauri-plugin-single-instance = "2"
+tokio.workspace = true

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged by Tauri into the macOS app's Info.plist (a file named Info.plist
+  next to tauri.conf.json is picked up without being named in any config).
+
+  NSBluetoothAlwaysUsageDescription: chest straps are read over Bluetooth LE.
+  macOS asks the first time the Bluetooth page scans, not at launch.
+  NSLocalNetworkUsageDescription: with LAN access on, the iPhone app and
+  other computers (OBS on a streaming PC) reach the built-in server.
+  NSBonjourServices: the server is announced as _uwupulse._tcp.
+-->
+<plist version="1.0">
+<dict>
+  <key>NSBluetoothAlwaysUsageDescription</key>
+  <string>UwUPulse reads your heart rate from Bluetooth chest straps.</string>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>UwUPulse receives your heart rate from the UwUPulse iPhone app and serves the overlay to other computers on your network.</string>
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_uwupulse._tcp</string>
+  </array>
+</dict>
+</plist>

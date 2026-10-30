@@ -1,0 +1,334 @@
+{
+  "cases": [
+    {
+      "commit": null,
+      "desktop": {
+        "ephemeral_private": "31363f242d121b00090e777c656a535841464fb4bda2ab90999e878cf5fae3e8",
+        "ephemeral_public": "5451bdf98c751ee29578d6c29df5a50089ac2d84b32e6f68baed789889bc970c",
+        "ephemeral_public_b64": "VFG9-Yx1HuKVeNbCnfWlAImsLYSzLm9ouu14mIm8lww",
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "name": "Studio Mac",
+        "static_private": "20272e353c030a11181f666d747b424950575ea5acb3ba81888f969de4ebf2f9",
+        "static_public": "e81b2473c1399663601f1fb867ebee40412abf371469a30243ab3dc470773b4b",
+        "static_public_b64": "6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s"
+      },
+      "dh_ephemeral": "bd499a8ce9bfbcc3b8e0fbc83a718e1b6a5ab2f7a43bc4cc42c5c1b473d1e208",
+      "dh_static": "5f1aacd427abc3e06343db0d824f0b920f04c0a61acf79729a6f2d7af7452e4c",
+      "frames_d2p": [
+        {
+          "ciphertext": "1a010245ed86a8a54854017d4f998dbd4079a5536fbd679095854224e2",
+          "counter": 0,
+          "nonce": "000000000000000000000000",
+          "plaintext": "{\"t\":\"ready\"}",
+          "plaintext_hex": "7b2274223a227265616479227d"
+        },
+        {
+          "ciphertext": "b613f404acb75de4c8861c7242a5917294f6661e06d7cae529111d85",
+          "counter": 1,
+          "nonce": "000000000100000000000000",
+          "plaintext": "{\"t\":\"pong\"}",
+          "plaintext_hex": "7b2274223a22706f6e67227d"
+        },
+        {
+          "ciphertext": "582d41f09f9f94c5393494c27366a7982acbb9128e895e9d829cbeef2c8ccf4ea61b84efd116529215574f3d",
+          "counter": 2,
+          "nonce": "000000000200000000000000",
+          "plaintext": "{\"t\":\"cmd\",\"action\":\"start\"}",
+          "plaintext_hex": "7b2274223a22636d64222c22616374696f6e223a227374617274227d"
+        }
+      ],
+      "frames_p2d": [
+        {
+          "ciphertext": "ccf534e6eeaf1c5dbc4acfe9940354e3cf244e81bf88da5c7399f781",
+          "counter": 0,
+          "nonce": "000000000000000000000000",
+          "plaintext": "{\"t\":\"auth\"}",
+          "plaintext_hex": "7b2274223a2261757468227d"
+        },
+        {
+          "ciphertext": "0b43243187de284e4078442624fea29e337079a66824918d44f0becd32d8155694eb73216404fa601dee54ed9fcbcd53a0567ab776aae560daa95fc6223d8e0397864bcf10bf84b42cd31d79e5ee22d8070e614802d4edefe6904bf0796285e0d84336f9263f66",
+          "counter": 1,
+          "nonce": "000000000100000000000000",
+          "plaintext": "{\"t\":\"hr\",\"ts\":1767225600000,\"bpm\":72,\"src\":\"watch\",\"dev\":\"Apple Watch\",\"rr\":[833,829]}",
+          "plaintext_hex": "7b2274223a226872222c227473223a313736373232353630303030302c2262706d223a37322c22737263223a227761746368222c22646576223a224170706c65205761746368222c227272223a5b3833332c3832395d7d"
+        },
+        {
+          "ciphertext": "3e2051ee3596f939e19d84f8d7e3c48a75637cccee4ff14c57fe4c72",
+          "counter": 2,
+          "nonce": "000000000200000000000000",
+          "plaintext": "{\"t\":\"ping\"}",
+          "plaintext_hex": "7b2274223a2270696e67227d"
+        }
+      ],
+      "ikm": "bd499a8ce9bfbcc3b8e0fbc83a718e1b6a5ab2f7a43bc4cc42c5c1b473d1e2085f1aacd427abc3e06343db0d824f0b920f04c0a61acf79729a6f2d7af7452e4c0000000000000000000000000000000000000000000000000000000000000000",
+      "k_d2p": "2255de471a0f1015c475f181a44f91d4887279a3cebb892e9b1c5b74bba9a8aa",
+      "k_p2d": "fcf4399343186b507d19182473fac63f30221d72102168df5e4db97f44849a1a",
+      "m1": "{\"t\":\"hello\",\"v\":1,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"name\":\"Lorin's iPhone\",\"spk\":\"t8f1y4FL_JypCTtgO1eRElyIsxhag_N3goBOB7uHGRQ\",\"epk\":\"MG7_Izz1V_9Nj7PcvqDMFAn-Em5geIHUsyUFCnt7MnI\",\"mode\":\"known\"}",
+      "m2": "{\"t\":\"hello\",\"v\":1,\"id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"name\":\"Studio Mac\",\"spk\":\"6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s\",\"epk\":\"VFG9-Yx1HuKVeNbCnfWlAImsLYSzLm9ouu14mIm8lww\"}",
+      "m3": null,
+      "mode": "known",
+      "name": "known",
+      "okm": "fcf4399343186b507d19182473fac63f30221d72102168df5e4db97f44849a1a2255de471a0f1015c475f181a44f91d4887279a3cebb892e9b1c5b74bba9a8aac9bd897a",
+      "phone": {
+        "ephemeral_private": "30373e252c131a01080f767d646b525940474eb5bca3aa91989f868df4fbe2e9",
+        "ephemeral_public": "306eff233cf557ff4d8fb3dcbea0cc1409fe126e607881d4b325050a7b7b3272",
+        "ephemeral_public_b64": "MG7_Izz1V_9Nj7PcvqDMFAn-Em5geIHUsyUFCnt7MnI",
+        "id": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "name": "Lorin's iPhone",
+        "static_private": "10171e050c333a21282f565d444b727960676e959c838ab1b8bfa6add4dbc2c9",
+        "static_public": "b7c7f5cb814bfc9ca9093b603b5791125c88b3185a83f37782804e07bb871914",
+        "static_public_b64": "t8f1y4FL_JypCTtgO1eRElyIsxhag_N3goBOB7uHGRQ"
+      },
+      "psk": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sas": "641914",
+      "th": "dbb05165bcb38fb4dd2a343486974b6c10c17f9e20b43584ee4f160cd4c43dad"
+    },
+    {
+      "commit": null,
+      "desktop": {
+        "ephemeral_private": "41464f545d626b70797e070c151a232831363fc4cdd2dbe0e9eef7fc858a9398",
+        "ephemeral_public": "e9e97b71487a6c0cc668828bd273adcc5da2ffa0cd6959c22d05a1e9e5043411",
+        "ephemeral_public_b64": "6el7cUh6bAzGaIKL0nOtzF2i_6DNaVnCLQWh6eUENBE",
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "name": "Studio Mac",
+        "static_private": "20272e353c030a11181f666d747b424950575ea5acb3ba81888f969de4ebf2f9",
+        "static_public": "e81b2473c1399663601f1fb867ebee40412abf371469a30243ab3dc470773b4b",
+        "static_public_b64": "6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s"
+      },
+      "dh_ephemeral": "e55007a3ea018977ba4f3272e479755c7f7cc5d2352051c24b9b579549fd4e00",
+      "dh_static": "5f1aacd427abc3e06343db0d824f0b920f04c0a61acf79729a6f2d7af7452e4c",
+      "frames_d2p": [
+        {
+          "ciphertext": "4dc27dc92e8af4581160a937f35f83aa2a4a94ca836b21328fbbd1d44b4a869fcacdd0d3fa47771b5ead0a08e6226732d29696496cd03aa20cbc2ea041bd8a1e1eb20dcfba501246ce41153ccf56c27858f9fc41e5ef9c6c516716ed2068",
+          "counter": 0,
+          "nonce": "000000000000000000000000",
+          "plaintext": "{\"t\":\"paired\",\"id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"name\":\"Studio Mac\"}",
+          "plaintext_hex": "7b2274223a22706169726564222c226964223a2237633965363637392d373432352d343064652d393434622d653037666331663930616537222c226e616d65223a2253747564696f204d6163227d"
+        },
+        {
+          "ciphertext": "0a61327671421a106f45e7df0ed57003f6983bbeb437a1a53b1295e847",
+          "counter": 1,
+          "nonce": "000000000100000000000000",
+          "plaintext": "{\"t\":\"ready\"}",
+          "plaintext_hex": "7b2274223a227265616479227d"
+        },
+        {
+          "ciphertext": "b596225c94c1ef21c5938c10f8e0409711f4675bac37c9b7b594b898",
+          "counter": 2,
+          "nonce": "000000000200000000000000",
+          "plaintext": "{\"t\":\"pong\"}",
+          "plaintext_hex": "7b2274223a22706f6e67227d"
+        },
+        {
+          "ciphertext": "20099756bdbf49f9c1972a384371da92b5b718d5afd495bf42ff903fd6784f22536529e9d4a53680c0d2ed3e",
+          "counter": 3,
+          "nonce": "000000000300000000000000",
+          "plaintext": "{\"t\":\"cmd\",\"action\":\"start\"}",
+          "plaintext_hex": "7b2274223a22636d64222c22616374696f6e223a227374617274227d"
+        }
+      ],
+      "frames_p2d": [
+        {
+          "ciphertext": "a7731be911069c1216639ae7e68fc1743652b8ae2466dddc43cdb026",
+          "counter": 0,
+          "nonce": "000000000000000000000000",
+          "plaintext": "{\"t\":\"auth\"}",
+          "plaintext_hex": "7b2274223a2261757468227d"
+        },
+        {
+          "ciphertext": "73c2739eaa9243b72ab72b06120010796ba3f00b7be70b0f2bdea5ebae3e3c143dc76a13c9801723f3bb0cb58c1e5bb279b20197483fc92c6f990f5308c00822e4bf3a9d5712d7d52ce0187c14e7055f39b2dec625cb4355e54e510ebb01918c6cb17f89873a32",
+          "counter": 1,
+          "nonce": "000000000100000000000000",
+          "plaintext": "{\"t\":\"hr\",\"ts\":1767225600000,\"bpm\":72,\"src\":\"watch\",\"dev\":\"Apple Watch\",\"rr\":[833,829]}",
+          "plaintext_hex": "7b2274223a226872222c227473223a313736373232353630303030302c2262706d223a37322c22737263223a227761746368222c22646576223a224170706c65205761746368222c227272223a5b3833332c3832395d7d"
+        },
+        {
+          "ciphertext": "f73253c9769ead1de3440c56a81c8e02c47f416f8fad938a09298787",
+          "counter": 2,
+          "nonce": "000000000200000000000000",
+          "plaintext": "{\"t\":\"ping\"}",
+          "plaintext_hex": "7b2274223a2270696e67227d"
+        }
+      ],
+      "ikm": "e55007a3ea018977ba4f3272e479755c7f7cc5d2352051c24b9b579549fd4e005f1aacd427abc3e06343db0d824f0b920f04c0a61acf79729a6f2d7af7452e4c5a5d544f4679706b62651c170e0138332a2d24dfd6c9c0fbf2f5ece79e918883",
+      "k_d2p": "7d00ef24a4f6a56e3b32505583a763f2e023cc67c83245e2279598c10444f0b7",
+      "k_p2d": "214e90c3a113b28307385f97449924bbdf221f9aae6848be809743996ecd7110",
+      "m1": "{\"t\":\"hello\",\"v\":1,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"name\":\"Lorin's iPhone\",\"spk\":\"t8f1y4FL_JypCTtgO1eRElyIsxhag_N3goBOB7uHGRQ\",\"epk\":\"EY2X4QdRecQMDVKK4MguIoJjtGdYr_3tqHrBdQvyiz0\",\"mode\":\"qr\"}",
+      "m2": "{\"t\":\"hello\",\"v\":1,\"id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"name\":\"Studio Mac\",\"spk\":\"6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s\",\"epk\":\"6el7cUh6bAzGaIKL0nOtzF2i_6DNaVnCLQWh6eUENBE\"}",
+      "m3": null,
+      "mode": "qr",
+      "name": "qr",
+      "okm": "214e90c3a113b28307385f97449924bbdf221f9aae6848be809743996ecd71107d00ef24a4f6a56e3b32505583a763f2e023cc67c83245e2279598c10444f0b76314afff",
+      "phone": {
+        "ephemeral_private": "40474e555c636a71787f060d141b222930373ec5ccd3dae1e8eff6fd848b9299",
+        "ephemeral_public": "118d97e1075179c40c0d528ae0c82e228263b46758affdeda87ac1750bf28b3d",
+        "ephemeral_public_b64": "EY2X4QdRecQMDVKK4MguIoJjtGdYr_3tqHrBdQvyiz0",
+        "id": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "name": "Lorin's iPhone",
+        "static_private": "10171e050c333a21282f565d444b727960676e959c838ab1b8bfa6add4dbc2c9",
+        "static_public": "b7c7f5cb814bfc9ca9093b603b5791125c88b3185a83f37782804e07bb871914",
+        "static_public_b64": "t8f1y4FL_JypCTtgO1eRElyIsxhag_N3goBOB7uHGRQ"
+      },
+      "psk": "5a5d544f4679706b62651c170e0138332a2d24dfd6c9c0fbf2f5ece79e918883",
+      "sas": "300159",
+      "th": "00fa1c0b9ff5f93354bf996af7d1b26ab01ef00b7daf51bf91eda5b4d7ab0cfe"
+    },
+    {
+      "commit": "OxKSvyRzT9MOifDVzkzgX3iTmKmwFSkODBBiIn8RlI4",
+      "desktop": {
+        "ephemeral_private": "51565f444d727b60696e171c050a333821262fd4ddc2cbf0f9fee7ec959a8388",
+        "ephemeral_public": "0db39597c483e998dfb07c7a95babaf7e3716f7e854da5c210408009a2087274",
+        "ephemeral_public_b64": "DbOVl8SD6ZjfsHx6lbq69-Nxb36FTaXCEECACaIIcnQ",
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "name": "Studio Mac",
+        "static_private": "20272e353c030a11181f666d747b424950575ea5acb3ba81888f969de4ebf2f9",
+        "static_public": "e81b2473c1399663601f1fb867ebee40412abf371469a30243ab3dc470773b4b",
+        "static_public_b64": "6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s"
+      },
+      "dh_ephemeral": "599ed9dd395b6400a8cd7790c04186c2813a6ba49bf9ad2de0f726c92cad137a",
+      "dh_static": "5f1aacd427abc3e06343db0d824f0b920f04c0a61acf79729a6f2d7af7452e4c",
+      "frames_d2p": [
+        {
+          "ciphertext": "648bb5e5259f71bd678703e86baf30c86cf521b5947002ecda4f8f81a5589d57c591873102008786132458174e4cc904399c260244eaf8106afad1ab0e7f64b38136c328ff1fe01d8adc6f9922a7d5c90b192c7f584059dc2cf8c12edb99",
+          "counter": 0,
+          "nonce": "000000000000000000000000",
+          "plaintext": "{\"t\":\"paired\",\"id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"name\":\"Studio Mac\"}",
+          "plaintext_hex": "7b2274223a22706169726564222c226964223a2237633965363637392d373432352d343064652d393434622d653037666331663930616537222c226e616d65223a2253747564696f204d6163227d"
+        },
+        {
+          "ciphertext": "013230ea86216938abe48fb9d124b102331fb5f2d3918d6ab98be1f668",
+          "counter": 1,
+          "nonce": "000000000100000000000000",
+          "plaintext": "{\"t\":\"ready\"}",
+          "plaintext_hex": "7b2274223a227265616479227d"
+        },
+        {
+          "ciphertext": "4bbc3ad4d5178f911b294eb1d1f5ae92daf181edea0f168813908b3f",
+          "counter": 2,
+          "nonce": "000000000200000000000000",
+          "plaintext": "{\"t\":\"pong\"}",
+          "plaintext_hex": "7b2274223a22706f6e67227d"
+        },
+        {
+          "ciphertext": "8bd2aa1e984dda8f3fb2470aab610829f2808e5c3ea17ccf4867d22de36bae4cc487ff1ce186d2abab9ca614",
+          "counter": 3,
+          "nonce": "000000000300000000000000",
+          "plaintext": "{\"t\":\"cmd\",\"action\":\"start\"}",
+          "plaintext_hex": "7b2274223a22636d64222c22616374696f6e223a227374617274227d"
+        }
+      ],
+      "frames_p2d": [
+        {
+          "ciphertext": "546a3ed4287775c41e4831194da16b897109dc6bc40e9b6aa73d6177",
+          "counter": 0,
+          "nonce": "000000000000000000000000",
+          "plaintext": "{\"t\":\"auth\"}",
+          "plaintext_hex": "7b2274223a2261757468227d"
+        },
+        {
+          "ciphertext": "1bb8ad98b01c3bff9853a1f3bd7708af8be65a44876de3e55674e3235f97e7bdbc25ef3b36cbf659244d47a01c00ee88e86cb9dd5675f204122c35e51f932c724cb6a04d72eaeea7186e97454d727981c53e3fd37efd44bbe0b02476d99c034d182a4e36de4b95",
+          "counter": 1,
+          "nonce": "000000000100000000000000",
+          "plaintext": "{\"t\":\"hr\",\"ts\":1767225600000,\"bpm\":72,\"src\":\"watch\",\"dev\":\"Apple Watch\",\"rr\":[833,829]}",
+          "plaintext_hex": "7b2274223a226872222c227473223a313736373232353630303030302c2262706d223a37322c22737263223a227761746368222c22646576223a224170706c65205761746368222c227272223a5b3833332c3832395d7d"
+        },
+        {
+          "ciphertext": "5315491cca75e209dbaa22640100af0aac37c6cefeb9e414a810df62",
+          "counter": 2,
+          "nonce": "000000000200000000000000",
+          "plaintext": "{\"t\":\"ping\"}",
+          "plaintext_hex": "7b2274223a2270696e67227d"
+        }
+      ],
+      "ikm": "599ed9dd395b6400a8cd7790c04186c2813a6ba49bf9ad2de0f726c92cad137a5f1aacd427abc3e06343db0d824f0b920f04c0a61acf79729a6f2d7af7452e4c0000000000000000000000000000000000000000000000000000000000000000",
+      "k_d2p": "f2973680cc509edba070f3274734d92e3ad908795f3f8d5dc6d38b2b734a18f9",
+      "k_p2d": "69f6f0f01a2456231b7162f3d33fe6825bb26d882a82e5aa0cd892168e0676ac",
+      "m1": "{\"t\":\"hello\",\"v\":1,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"name\":\"Lorin's iPhone\",\"spk\":\"t8f1y4FL_JypCTtgO1eRElyIsxhag_N3goBOB7uHGRQ\",\"commit\":\"OxKSvyRzT9MOifDVzkzgX3iTmKmwFSkODBBiIn8RlI4\",\"mode\":\"sas\"}",
+      "m2": "{\"t\":\"hello\",\"v\":1,\"id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"name\":\"Studio Mac\",\"spk\":\"6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s\",\"epk\":\"DbOVl8SD6ZjfsHx6lbq69-Nxb36FTaXCEECACaIIcnQ\"}",
+      "m3": "{\"t\":\"reveal\",\"epk\":\"v836FuKVfFCK4Tt048dIFPlCUSmrPR9hNRIXFZ17w3s\"}",
+      "mode": "sas",
+      "name": "sas",
+      "okm": "69f6f0f01a2456231b7162f3d33fe6825bb26d882a82e5aa0cd892168e0676acf2973680cc509edba070f3274734d92e3ad908795f3f8d5dc6d38b2b734a18f9a194ac4e",
+      "phone": {
+        "ephemeral_private": "50575e454c737a61686f161d040b323920272ed5dcc3caf1f8ffe6ed949b8289",
+        "ephemeral_public": "bfcdfa16e2957c508ae13b74e3c74814f9425129ab3d1f61351217159d7bc37b",
+        "ephemeral_public_b64": "v836FuKVfFCK4Tt048dIFPlCUSmrPR9hNRIXFZ17w3s",
+        "id": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "name": "Lorin's iPhone",
+        "static_private": "10171e050c333a21282f565d444b727960676e959c838ab1b8bfa6add4dbc2c9",
+        "static_public": "b7c7f5cb814bfc9ca9093b603b5791125c88b3185a83f37782804e07bb871914",
+        "static_public_b64": "t8f1y4FL_JypCTtgO1eRElyIsxhag_N3goBOB7uHGRQ"
+      },
+      "psk": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sas": "875214",
+      "th": "4d4fe003a89d03c152b1c8c80cb12e6748c059275ac1c4a144cd668c7f37516a"
+    }
+  ],
+  "commit_label": "UwUPulse-commit-v1",
+  "description": "UwUPulse link protocol v1 test vectors, generated by crates/uwupulse-proto (cargo test, UPDATE_VECTORS=1 to regenerate). All byte strings are lowercase hex unless the key ends in _b64 (base64url, no padding). m1/m2/m3 are the exact UTF-8 text frames; in sas, m1 carries commit = SHA-256(\"UwUPulse-commit-v1\" || phone ephemeral_public) instead of epk (field commit: base64url as in m1, despite the name; null outside sas), and m3 is the phone's reveal (null otherwise); th = SHA-256(\"UwUPulse-link-v1\" || m1 || m2), in sas SHA-256(\"UwUPulse-link-v1\" || m1 || m2 || m3); ikm = dh_ephemeral || dh_static || psk; okm = HKDF-SHA256(salt = th, ikm, info = \"uwupulse link keys\", L = 68); k_p2d = okm[0..32], k_d2p = okm[32..64]; sas = u32_be(okm[64..68]) mod 1000000, zero-padded to 6 digits. Frames: ChaCha20-Poly1305, nonce = 00000000 || u64_le(counter), empty AAD, ciphertext includes the 16-byte tag. X25519 private keys are given unclamped, as stored.",
+  "heart_rate_measurement": [
+    {
+      "bpm": 72,
+      "contact": null,
+      "energy_kj": null,
+      "input": "0048",
+      "rr_ms": []
+    },
+    {
+      "bpm": 80,
+      "contact": true,
+      "energy_kj": null,
+      "input": "0650",
+      "rr_ms": []
+    },
+    {
+      "bpm": 300,
+      "contact": null,
+      "energy_kj": null,
+      "input": "012c01",
+      "rr_ms": []
+    },
+    {
+      "bpm": 64,
+      "contact": null,
+      "energy_kj": 16,
+      "input": "1840100000044103",
+      "rr_ms": [
+        1000,
+        813
+      ]
+    },
+    {
+      "bpm": 60,
+      "contact": null,
+      "energy_kj": null,
+      "input": "103c000407",
+      "rr_ms": [
+        1000
+      ]
+    },
+    {
+      "input": "0150",
+      "invalid": true
+    },
+    {
+      "input": "",
+      "invalid": true
+    }
+  ],
+  "hkdf_info": "uwupulse link keys",
+  "pairing_uri": {
+    "hosts": [
+      "192.168.1.10",
+      "fe80::1"
+    ],
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Studio Mac",
+    "pk": "e81b2473c1399663601f1fb867ebee40412abf371469a30243ab3dc470773b4b",
+    "port": 8746,
+    "secret": "5a5d544f4679706b62651c170e0138332a2d24dfd6c9c0fbf2f5ece79e918883",
+    "uri": "uwupulse://pair?v=1&id=7c9e6679-7425-40de-944b-e07fc1f90ae7&n=Studio%20Mac&pk=6Bskc8E5lmNgHx-4Z-vuQEEqvzcUaaMCQ6s9xHB3O0s&s=Wl1UT0Z5cGtiZRwXDgE4MyotJN_WycD78vXs556RiIM&p=8746&h=192.168.1.10,fe80%3A%3A1"
+  },
+  "transcript_label": "UwUPulse-link-v1",
+  "version": 1
+}

@@ -1,0 +1,28 @@
+// Shared settings for the UwUPulse iOS and watchOS apps. Local overrides (other team, etc.)
+// go into Config/UwUPulse.local.xcconfig, which is git-ignored.
+
+DEVELOPMENT_TEAM = 7N8YX2CL7J
+UWUPULSE_BUNDLE_ID = app.uwupulse.ios
+UWUPULSE_WATCH_BUNDLE_ID = $(UWUPULSE_BUNDLE_ID).watchkitapp
+
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+IPHONEOS_DEPLOYMENT_TARGET = 18.0
+WATCHOS_DEPLOYMENT_TARGET = 11.0
+SWIFT_VERSION = 6.0
+SWIFT_STRICT_CONCURRENCY = complete
+
+// Signing: Automatic (Xcode account or API key) or Manual — then the own distribution
+// certificate and the App Store profiles created via the API (scripts/testflight.sh sets
+// UWUPULSE_SIGNING=Manual). Only via this file so package resource bundles stay unsigned.
+UWUPULSE_SIGNING = Automatic
+CODE_SIGN_STYLE = $(UWUPULSE_SIGNING)
+UWUPULSE_IDENTITY_Manual = Apple Distribution
+UWUPULSE_IDENTITY_Automatic = Apple Development
+UWUPULSE_PROFILE_Manual = UwUPulse AppStore $(PRODUCT_BUNDLE_IDENTIFIER) (API)
+PROVISIONING_PROFILE_SPECIFIER = $(UWUPULSE_PROFILE_$(UWUPULSE_SIGNING))
+CODE_SIGN_IDENTITY[sdk=iphonesimulator*] = -
+CODE_SIGN_IDENTITY[sdk=watchsimulator*] = -
+
+#include? "UwUPulse.local.xcconfig"

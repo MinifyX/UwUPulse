@@ -1,0 +1,54 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse"
+          }
+        }
+      }
+    },
+    "NSHealthShareUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse liest während eines Live-Trainings deine Herzfrequenz, um sie an dein iPhone weiterzuleiten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse reads your heart rate during a live workout to forward it to your iPhone."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse führt ein Training aus, um deine Herzfrequenz zu messen. Nichts wird in Health gespeichert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse runs a workout session to measure your heart rate. Nothing is saved to Health."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

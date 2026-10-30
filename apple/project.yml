@@ -1,0 +1,117 @@
+name: UwUPulse
+options:
+  bundleIdPrefix: app.uwupulse
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+configFiles:
+  Debug: Config/UwUPulse.xcconfig
+  Release: Config/UwUPulse.xcconfig
+settings:
+  base:
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    ENABLE_PREVIEWS: YES
+    # Follows UWUPULSE_SIGNING (Config/UwUPulse.xcconfig) instead of XcodeGen's default identity.
+    CODE_SIGN_IDENTITY: $(UWUPULSE_IDENTITY_$(UWUPULSE_SIGNING))
+packages:
+  PulseKit:
+    path: PulseKit
+targets:
+  UwUPulse:
+    type: application
+    platform: iOS
+    sources:
+      - path: UwUPulse
+    dependencies:
+      - package: PulseKit
+      - target: UwUPulseWatch
+    scheme: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(UWUPULSE_BUNDLE_ID)
+        PRODUCT_NAME: UwUPulse
+        INFOPLIST_FILE: UwUPulse/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: UwUPulse/Resources/UwUPulse.entitlements
+        CODE_SIGN_IDENTITY: $(UWUPULSE_IDENTITY_$(UWUPULSE_SIGNING))
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: UwUPulse/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: UwUPulse
+        CFBundleDevelopmentRegion: en
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        UILaunchScreen:
+          UIColorName: ""
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # Mirrored workout keeps the app running; BLE straps keep notifying in the background.
+        UIBackgroundModes:
+          - bluetooth-central
+          - workout-processing
+        # Localized in InfoPlist.xcstrings.
+        NSHealthShareUsageDescription: UwUPulse reads your heart rate during a live workout to forward it to your computer.
+        NSHealthUpdateUsageDescription: UwUPulse starts a workout on your Apple Watch to measure your heart rate. Nothing is saved to Health.
+        NSLocalNetworkUsageDescription: UwUPulse finds your computer on the local network and sends your heart rate to it directly.
+        NSCameraUsageDescription: UwUPulse uses the camera to scan the pairing QR code shown by the desktop app.
+        NSBluetoothAlwaysUsageDescription: UwUPulse connects to Bluetooth heart rate chest straps.
+        NSBonjourServices:
+          - _uwupulse._tcp
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        CFBundleURLTypes:
+          - CFBundleURLName: $(UWUPULSE_BUNDLE_ID)
+            CFBundleURLSchemes:
+              - uwupulse
+    entitlements:
+      path: UwUPulse/Resources/UwUPulse.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+
+  UwUPulseWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: UwUPulseWatch
+    dependencies:
+      - package: PulseKit
+    scheme: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(UWUPULSE_WATCH_BUNDLE_ID)
+        PRODUCT_NAME: UwUPulseWatch
+        INFOPLIST_FILE: UwUPulseWatch/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: UwUPulseWatch/Resources/UwUPulseWatch.entitlements
+        CODE_SIGN_IDENTITY: $(UWUPULSE_IDENTITY_$(UWUPULSE_SIGNING))
+        TARGETED_DEVICE_FAMILY: "4"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: UwUPulseWatch/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: UwUPulse
+        CFBundleDevelopmentRegion: en
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: $(UWUPULSE_BUNDLE_ID)
+        WKBackgroundModes:
+          - workout-processing
+        NSHealthShareUsageDescription: UwUPulse reads your heart rate during a live workout to forward it to your iPhone.
+        NSHealthUpdateUsageDescription: UwUPulse runs a workout session to measure your heart rate. Nothing is saved to Health.
+    entitlements:
+      path: UwUPulseWatch/Resources/UwUPulseWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []

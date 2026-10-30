@@ -1,0 +1,24 @@
+# Maintainer: Lorin (MinifyX)
+# Repackages the Debian package from the GitHub release. release.yml sets
+# pkgver/_ver and the checksum for each release.
+pkgname=uwupulse-bin
+pkgver=0.1.0
+_ver=0.1.0
+pkgrel=1
+pkgdesc='Heart rate from Apple Watch and BLE straps to OBS overlays and a local API, fully offline'
+arch=('x86_64')
+url='https://github.com/MinifyX/UwUPulse'
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'dbus' 'hicolor-icon-theme')
+provides=('uwupulse')
+conflicts=('uwupulse')
+source=("UwUPulse-${_ver}-linux-x64.deb::https://github.com/MinifyX/UwUPulse/releases/download/v${_ver}/UwUPulse-${_ver}-linux-x64.deb")
+sha256sums=('SKIP')
+noextract=("UwUPulse-${_ver}-linux-x64.deb")
+
+package() {
+  cd "$srcdir"
+  bsdtar -xf "UwUPulse-${_ver}-linux-x64.deb" 'data.tar.*'
+  bsdtar -xf data.tar.* -C "$pkgdir"
+  chmod -R u=rwX,go=rX "$pkgdir/usr"
+}

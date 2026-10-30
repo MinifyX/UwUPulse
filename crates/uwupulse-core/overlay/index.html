@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>UwUPulse</title>
+    <link rel="stylesheet" href="/overlay/assets/overlay.css" />
+    <!-- The widget's custom CSS; overlay.js sets textContent only, never HTML. -->
+    <style id="uwp-custom"></style>
+  </head>
+  <body>
+    <div class="uwp-root" data-preset="classic" data-live="false">
+      <div class="uwp-widget">
+        <div class="uwp-main">
+          <svg class="uwp-ring" viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="uwp-ring-track" cx="50" cy="50" r="44" />
+            <circle class="uwp-ring-fill" cx="50" cy="50" r="44" pathLength="100" />
+          </svg>
+          <div class="uwp-face">
+            <svg class="uwp-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21.35 10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54L12 21.35Z"
+              />
+            </svg>
+            <div class="uwp-value">
+              <span class="uwp-bpm">--</span>
+              <span class="uwp-label">BPM</span>
+            </div>
+            <div class="uwp-idle"></div>
+          </div>
+        </div>
+        <canvas class="uwp-graph" aria-hidden="true"></canvas>
+        <canvas class="uwp-ecg" aria-hidden="true"></canvas>
+      </div>
+    </div>
+    <script src="/overlay/assets/overlay.js"></script>
+  </body>
+</html>

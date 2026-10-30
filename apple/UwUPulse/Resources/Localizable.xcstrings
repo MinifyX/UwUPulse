@@ -1,0 +1,896 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld BPM": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld BPM"
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info"
+          }
+        }
+      }
+    },
+    "Address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse"
+          }
+        }
+      }
+    },
+    "Allow Bluetooth for UwUPulse in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube Bluetooth für UwUPulse in den Einstellungen."
+          }
+        }
+      }
+    },
+    "Allow local network access for UwUPulse in Settings to find your computer.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube UwUPulse in den Einstellungen den Zugriff auf das lokale Netzwerk, um deinen Computer zu finden."
+          }
+        }
+      }
+    },
+    "Any Bluetooth chest strap with the standard heart rate profile works. Wear it so it wakes up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeder Bluetooth-Brustgurt mit dem Standard-Herzfrequenzprofil funktioniert. Leg ihn an, damit er aufwacht."
+          }
+        }
+      }
+    },
+    "Apple Watch": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch"
+          }
+        }
+      }
+    },
+    "BPM": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BPM"
+          }
+        }
+      }
+    },
+    "Bluetooth is not supported on this device.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth wird auf diesem Gerät nicht unterstützt."
+          }
+        }
+      }
+    },
+    "Bluetooth is turned off.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth ist ausgeschaltet."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        }
+      }
+    },
+    "Check that the computer shows the same code.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüfe, ob der Computer denselben Code zeigt."
+          }
+        }
+      }
+    },
+    "Chest strap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brustgurt"
+          }
+        }
+      }
+    },
+    "Chest straps": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brustgurte"
+          }
+        }
+      }
+    },
+    "Codes match": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codes stimmen überein"
+          }
+        }
+      }
+    },
+    "Compare the codes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codes vergleichen"
+          }
+        }
+      }
+    },
+    "Computer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer"
+          }
+        }
+      }
+    },
+    "Connected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden"
+          }
+        }
+      }
+    },
+    "Connected (%@)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden (%@)"
+          }
+        }
+      }
+    },
+    "Connected, no skin contact": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden, kein Hautkontakt"
+          }
+        }
+      }
+    },
+    "Connecting to %@…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde mit %@…"
+          }
+        }
+      }
+    },
+    "Connecting…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde…"
+          }
+        }
+      }
+    },
+    "Desktops": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer"
+          }
+        }
+      }
+    },
+    "Device ID": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geräte-ID"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        }
+      }
+    },
+    "Every connection is end-to-end encrypted.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Verbindung ist Ende-zu-Ende-verschlüsselt."
+          }
+        }
+      }
+    },
+    "Forget strap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brustgurt vergessen"
+          }
+        }
+      }
+    },
+    "Found on the local network": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im lokalen Netzwerk gefunden"
+          }
+        }
+      }
+    },
+    "From Apple Watch": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von der Apple Watch"
+          }
+        }
+      }
+    },
+    "From chest strap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vom Brustgurt"
+          }
+        }
+      }
+    },
+    "Health data is not available on this device.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesundheitsdaten sind auf diesem Gerät nicht verfügbar."
+          }
+        }
+      }
+    },
+    "Home": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "Install UwUPulse on your Apple Watch.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installiere UwUPulse auf deiner Apple Watch."
+          }
+        }
+      }
+    },
+    "Keep old": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alten behalten"
+          }
+        }
+      }
+    },
+    "License": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lizenz"
+          }
+        }
+      }
+    },
+    "Nearby": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In der Nähe"
+          }
+        }
+      }
+    },
+    "No Apple Watch paired": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Apple Watch gekoppelt"
+          }
+        }
+      }
+    },
+    "Not connected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht verbunden"
+          }
+        }
+      }
+    },
+    "Not searching": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche inaktiv"
+          }
+        }
+      }
+    },
+    "Now confirm the code on the computer.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestätige den Code jetzt auch am Computer."
+          }
+        }
+      }
+    },
+    "Offline, retrying…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline, neuer Versuch…"
+          }
+        }
+      }
+    },
+    "Only pair if you just opened “Pair iPhone” on this computer yourself.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopple nur, wenn du gerade selbst auf diesem Computer „iPhone koppeln“ geöffnet hast."
+          }
+        }
+      }
+    },
+    "Open UwUPulse on your computer and choose “Pair iPhone”. Then scan the QR code or pick the computer below.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffne UwUPulse auf deinem Computer und wähle „iPhone koppeln“. Scanne dann den QR-Code oder wähle den Computer unten aus."
+          }
+        }
+      }
+    },
+    "Pair": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koppeln"
+          }
+        }
+      }
+    },
+    "Pair a desktop": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer koppeln"
+          }
+        }
+      }
+    },
+    "Pair with computer?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Computer koppeln?"
+          }
+        }
+      }
+    },
+    "Paired": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gekoppelt"
+          }
+        }
+      }
+    },
+    "Paired with %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gekoppelt mit %@"
+          }
+        }
+      }
+    },
+    "Pairing": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopplung"
+          }
+        }
+      }
+    },
+    "Pairing cancelled. The stored computer was kept.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koppeln abgebrochen. Der gespeicherte Computer bleibt erhalten."
+          }
+        }
+      }
+    },
+    "Pairing was rejected on the desktop.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kopplung wurde am Computer abgelehnt."
+          }
+        }
+      }
+    },
+    "Pairing with a nearby computer shows a 6-digit code on both devices. Confirm it on both devices if it matches.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beim Koppeln mit einem Computer in der Nähe erscheint auf beiden Geräten ein 6-stelliger Code. Bestätige ihn auf beiden Geräten, wenn er übereinstimmt."
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutz"
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereit"
+          }
+        }
+      }
+    },
+    "Reconnect": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu verbinden"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entfernen"
+          }
+        }
+      }
+    },
+    "Replace": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ersetzen"
+          }
+        }
+      }
+    },
+    "Replace paired computer?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gekoppelten Computer ersetzen?"
+          }
+        }
+      }
+    },
+    "Scan QR code": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Code scannen"
+          }
+        }
+      }
+    },
+    "Searching for chest straps…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche Brustgurte…"
+          }
+        }
+      }
+    },
+    "Searching for computers…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche Computer…"
+          }
+        }
+      }
+    },
+    "Securing connection…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sichere Verbindung…"
+          }
+        }
+      }
+    },
+    "Start on Apple Watch": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf der Apple Watch starten"
+          }
+        }
+      }
+    },
+    "Starting on the watch…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startet auf der Watch…"
+          }
+        }
+      }
+    },
+    "Starting…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startet…"
+          }
+        }
+      }
+    },
+    "Stop workout": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training beenden"
+          }
+        }
+      }
+    },
+    "Stopping…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird beendet…"
+          }
+        }
+      }
+    },
+    "The computer does not match the pairing code. Pair again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Computer passt nicht zum Kopplungscode. Kopple erneut."
+          }
+        }
+      }
+    },
+    "The connection failed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Verbindung ist fehlgeschlagen."
+          }
+        }
+      }
+    },
+    "The desktop app uses a different protocol version. Update both apps.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Desktop-App nutzt eine andere Protokollversion. Aktualisiere beide Apps."
+          }
+        }
+      }
+    },
+    "The desktop could not be reached.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Computer ist nicht erreichbar."
+          }
+        }
+      }
+    },
+    "The desktop is busy with another pairing.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Computer koppelt gerade ein anderes Gerät."
+          }
+        }
+      }
+    },
+    "The desktop is not in pairing mode.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Computer ist nicht im Kopplungsmodus."
+          }
+        }
+      }
+    },
+    "The desktop key does not match. Pair again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Schlüssel des Computers stimmt nicht überein. Kopple erneut."
+          }
+        }
+      }
+    },
+    "The watch did not start the workout.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Watch hat das Training nicht gestartet."
+          }
+        }
+      }
+    },
+    "This QR code is from a newer UwUPulse version. Update the app.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser QR-Code stammt von einer neueren UwUPulse-Version. Aktualisiere die App."
+          }
+        }
+      }
+    },
+    "This iPhone": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses iPhone"
+          }
+        }
+      }
+    },
+    "This iPhone was removed on the desktop. Pair again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses iPhone wurde am Computer entfernt. Kopple erneut."
+          }
+        }
+      }
+    },
+    "This is not a UwUPulse pairing code.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ist kein UwUPulse-Kopplungscode."
+          }
+        }
+      }
+    },
+    "This pairing code points outside your local network and was rejected.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Kopplungscode zeigt auf ein Ziel außerhalb deines lokalen Netzwerks und wurde abgelehnt."
+          }
+        }
+      }
+    },
+    "UwUPulse": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UwUPulse"
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        }
+      }
+    },
+    "Waiting for confirmation…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warte auf Bestätigung…"
+          }
+        }
+      }
+    },
+    "Waiting for strap…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warte auf Brustgurt…"
+          }
+        }
+      }
+    },
+    "Workout running": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training läuft"
+          }
+        }
+      }
+    },
+    "Workouts are discarded at the end and not saved to Health.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainings werden am Ende verworfen und nicht in Health gespeichert."
+          }
+        }
+      }
+    },
+    "Your heart rate only goes to computers you paired, directly over your local network. No cloud, no account, no tracking.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Herzfrequenz geht nur an Computer, die du gekoppelt hast, direkt über dein lokales Netzwerk. Keine Cloud, kein Konto, kein Tracking."
+          }
+        }
+      }
+    },
+    "Your strap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Brustgurt"
+          }
+        }
+      }
+    },
+    "“%@” is already paired but now presents a different key. Replace it only if you reinstalled UwUPulse on that computer.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ ist bereits gekoppelt, meldet sich jetzt aber mit einem anderen Schlüssel. Ersetze ihn nur, wenn du UwUPulse auf diesem Computer neu installiert hast."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

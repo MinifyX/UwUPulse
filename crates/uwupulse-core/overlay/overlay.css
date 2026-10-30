@@ -1,0 +1,250 @@
+/*
+ * UwUPulse overlay — stable names for custom CSS. These stay the same across
+ * versions; anything else may change.
+ *
+ * Elements
+ *   .uwp-root          whole page. Attributes:
+ *                        data-preset="classic|minimal|ring|graph|ecg"
+ *                        data-live="true|false"   (false: no value for 10 s)
+ *                        data-zone="0..7"         (index of the active zone, if zones are on)
+ *                        data-icon / data-label / data-graph / data-hide-idle = "true|false"
+ *   .uwp-widget        the box that carries the background
+ *   .uwp-main          icon, number and ring stacked together
+ *   .uwp-ring          ring SVG (preset "ring"), with .uwp-ring-track and .uwp-ring-fill
+ *   .uwp-face          icon + number + idle text
+ *   .uwp-icon          heart SVG (fill: currentColor)
+ *   .uwp-value         number + label
+ *   .uwp-bpm           the number
+ *   .uwp-label         "BPM"
+ *   .uwp-idle          idle text (only shown while idle and set)
+ *   .uwp-graph         sparkline canvas (line colour: its CSS `color`)
+ *   .uwp-ecg           ECG canvas (line colour: its CSS `color`)
+ *
+ * Variables (on .uwp-root)
+ *   --uwp-color   accent (zone colour when zones are on)
+ *   --uwp-text    number colour
+ *   --uwp-bg      widget background
+ *   --uwp-font    font-family
+ *   --uwp-size    number size (px)
+ *   --uwp-beat    one beat in seconds
+ *   --uwp-pulse   0..1, the beat right now (0 = rest); set every frame while beating
+ */
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+.uwp-root {
+  --uwp-color: #ff4d6d;
+  --uwp-text: #ffffff;
+  --uwp-bg: transparent;
+  --uwp-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --uwp-size: 72px;
+  --uwp-beat: 1s;
+  --uwp-pulse: 0;
+  --uwp-fit: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: var(--uwp-font);
+  color: var(--uwp-text);
+  transition: opacity 600ms ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+.uwp-root[data-live='false'][data-hide-idle='true'] {
+  opacity: 0;
+}
+
+.uwp-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--uwp-size) * 0.12);
+  padding: calc(var(--uwp-size) * 0.18) calc(var(--uwp-size) * 0.28);
+  border-radius: calc(var(--uwp-size) * 0.28);
+  background: var(--uwp-bg);
+  transform: scale(var(--uwp-fit));
+  transform-origin: center;
+}
+
+.uwp-main {
+  display: grid;
+  place-items: center;
+}
+
+.uwp-main > * {
+  grid-area: 1 / 1;
+}
+
+.uwp-face {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--uwp-size) * 0.18);
+}
+
+.uwp-icon {
+  width: calc(var(--uwp-size) * 0.82);
+  height: calc(var(--uwp-size) * 0.82);
+  fill: var(--uwp-color);
+  color: var(--uwp-color);
+  transform: scale(calc(1 + var(--uwp-pulse) * 0.16));
+  filter: drop-shadow(0 calc(var(--uwp-size) * 0.04) calc(var(--uwp-size) * 0.12) rgb(0 0 0 / 0.3));
+  transition: fill 500ms ease;
+}
+
+.uwp-value {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--uwp-size) * 0.1);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.uwp-bpm {
+  min-width: 2ch;
+  font-size: var(--uwp-size);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-shadow: 0 calc(var(--uwp-size) * 0.03) calc(var(--uwp-size) * 0.12) rgb(0 0 0 / 0.35);
+}
+
+.uwp-label {
+  font-size: calc(var(--uwp-size) * 0.32);
+  font-weight: 700;
+  color: var(--uwp-color);
+  letter-spacing: 0.04em;
+  transition: color 500ms ease;
+}
+
+.uwp-idle {
+  display: none;
+  font-size: calc(var(--uwp-size) * 0.45);
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: 0 calc(var(--uwp-size) * 0.03) calc(var(--uwp-size) * 0.12) rgb(0 0 0 / 0.35);
+}
+
+.uwp-root[data-live='false'][data-idle-text='true'] .uwp-idle {
+  display: block;
+}
+
+.uwp-root[data-live='false'][data-idle-text='true'] .uwp-value {
+  display: none;
+}
+
+.uwp-root[data-live='false'] .uwp-icon {
+  opacity: 0.45;
+}
+
+.uwp-root[data-icon='false'] .uwp-icon,
+.uwp-root[data-label='false'] .uwp-label {
+  display: none;
+}
+
+.uwp-graph,
+.uwp-ecg,
+.uwp-ring {
+  display: none;
+}
+
+.uwp-graph {
+  width: calc(var(--uwp-size) * 4);
+  height: calc(var(--uwp-size) * 0.8);
+  color: var(--uwp-color);
+}
+
+.uwp-root[data-graph='true'] .uwp-graph {
+  display: block;
+}
+
+/* ── Presets ───────────────────────────────────────────── */
+
+.uwp-root[data-preset='minimal'] .uwp-icon {
+  display: none;
+}
+
+/* Ring: the number sits inside a ring that fills with the heart rate. */
+.uwp-root[data-preset='ring'] .uwp-ring {
+  display: block;
+  width: calc(var(--uwp-size) * 2.6);
+  height: calc(var(--uwp-size) * 2.6);
+  overflow: visible;
+  transform: rotate(-90deg) scale(calc(1 + var(--uwp-pulse) * 0.06));
+}
+
+.uwp-root[data-preset='ring'] .uwp-face {
+  flex-direction: column;
+  gap: calc(var(--uwp-size) * 0.04);
+}
+
+.uwp-root[data-preset='ring'] .uwp-icon {
+  width: calc(var(--uwp-size) * 0.36);
+  height: calc(var(--uwp-size) * 0.36);
+}
+
+.uwp-root[data-preset='ring'] .uwp-value {
+  flex-direction: column;
+  align-items: center;
+}
+
+.uwp-root[data-preset='ring'] .uwp-bpm {
+  text-align: center;
+}
+
+.uwp-ring-track,
+.uwp-ring-fill {
+  fill: none;
+  stroke: var(--uwp-color);
+  stroke-width: 6;
+}
+
+.uwp-ring-track {
+  opacity: 0.22;
+}
+
+.uwp-ring-fill {
+  stroke-linecap: round;
+  stroke-dasharray: 0 100;
+  transition:
+    stroke-dasharray 800ms ease,
+    stroke 500ms ease;
+}
+
+/* Graph: the sparkline is always there and a little larger. */
+.uwp-root[data-preset='graph'] .uwp-graph {
+  display: block;
+  height: calc(var(--uwp-size) * 1.1);
+}
+
+/* ECG: the trace beside the number. */
+.uwp-root[data-preset='ecg'] .uwp-widget {
+  flex-direction: row-reverse;
+  gap: calc(var(--uwp-size) * 0.3);
+}
+
+.uwp-root[data-preset='ecg'] .uwp-ecg {
+  display: block;
+  width: calc(var(--uwp-size) * 4.5);
+  height: calc(var(--uwp-size) * 1.3);
+  color: var(--uwp-color);
+}
+
+.uwp-root[data-preset='ecg'] .uwp-icon,
+.uwp-root[data-preset='ecg'] .uwp-graph {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uwp-root {
+    --uwp-pulse: 0 !important;
+  }
+}
