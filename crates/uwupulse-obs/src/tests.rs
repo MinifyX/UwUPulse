@@ -170,6 +170,7 @@ fn null_arguments_are_harmless() {
         assert!(uwupulse_obs_start(ptr::null()).is_null());
         uwupulse_obs_stop(ptr::null_mut());
         assert!(uwupulse_obs_ui_url(ptr::null()).is_null());
+        assert!(uwupulse_obs_ui_ticket_url(ptr::null()).is_null());
         assert!(uwupulse_obs_widgets(ptr::null()).is_null());
         assert!(uwupulse_obs_overlay_url(ptr::null(), ptr::null()).is_null());
         uwupulse_obs_free_string(ptr::null_mut());
@@ -226,6 +227,13 @@ fn serves_the_dock_and_lists_widgets() {
     let (status, body) = http(port, "GET", "/ui/", "", "");
     assert_eq!(status, 200);
     assert!(body.contains("<title>UwUPulse</title>"));
+    // The system browser gets a ticket, never the secret.
+    let ticket = take(unsafe { uwupulse_obs_ui_ticket_url(s.h) });
+    assert!(
+        ticket.starts_with(&format!("http://127.0.0.1:{port}/ui/#t=")),
+        "{ticket}"
+    );
+    assert!(!ticket.contains(&ui[prefix.len()..]));
 
     // The page's host is OBS, without an updater.
     let secret = &ui[prefix.len()..];

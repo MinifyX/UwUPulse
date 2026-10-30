@@ -4,7 +4,10 @@
 #include "plugin.hpp"
 
 #include <atomic>
+#include <condition_variable>
 #include <cstring>
+#include <memory>
+#include <mutex>
 
 #include <obs-frontend-api.h>
 #include <obs-module.h>
@@ -16,8 +19,8 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QMetaObject>
+#include <QObject>
 #include <QStandardPaths>
-#include <QThread>
 #include <QUrl>
 #include <QWidget>
 
@@ -42,6 +45,17 @@ uwupulse_obs *g_core = nullptr;
 // One pending refresh at a time: the core may report several changes at once.
 std::atomic<bool> g_refresh_queued{false};
 
+// Receiver of everything the core's threads post to the UI thread. Deleted
+// at unload, which drops whatever is still queued: no posted call runs after
+// the module is gone.
+QObject *g_ui_ctx = nullptr;
+
+// Set at unload, before the core stops: save dialogs aren't opened any
+// more, and a core thread waiting for one returns at once.
+std::atomic<bool> g_unloading{false};
+std::mutex g_save_mutex;
+std::condition_variable g_save_cv;
+
 std::string take(char *s)
 {
 	if (!s)
@@ -51,17 +65,6 @@ std::string take(char *s)
 	return out;
 }
 
-// Runs f on the Qt main thread and waits for it.
-template<typename F> void on_ui_thread_blocking(F &&f)
-{
-	QCoreApplication *app = QCoreApplication::instance();
-	if (!app || QThread::currentThread() == app->thread()) {
-		f();
-		return;
-	}
-	QMetaObject::invokeMethod(app, std::forward<F>(f), Qt::BlockingQueuedConnection);
-}
-
 void on_log(void *, int level, const char *msg)
 {
 	blog(level, "%s", msg);
@@ -69,32 +72,64 @@ void on_log(void *, int level, const char *msg)
 
 bool on_open_url(void *, const char *url)
 {
-	QUrl target(QString::fromUtf8(url));
-	if (!target.isValid())
+	// Only web pages: the core asks for its project pages, never for local
+	// files or other programs' URL schemes.
+	QUrl target(QString::fromUtf8(url), QUrl::StrictMode);
+	if (!target.isValid() || target.scheme() != QLatin1String("https") || target.host().isEmpty())
 		return false;
-	QCoreApplication *app = QCoreApplication::instance();
-	if (!app)
+	if (!g_ui_ctx || g_unloading)
 		return false;
-	QMetaObject::invokeMethod(app, [target]() { QDesktopServices::openUrl(target); }, Qt::QueuedConnection);
+	QMetaObject::invokeMethod(g_ui_ctx, [target]() { QDesktopServices::openUrl(target); }, Qt::QueuedConnection);
 	return true;
 }
+
+// One save dialog request, shared by the core thread that waits and the UI
+// thread that shows it (either may be gone first).
+struct SaveRequest {
+	bool done = false;
+	QString picked;
+};
 
 int on_save_file(void *, const char *file_name, const char *filter_name, const char *extension, char *out,
 		 size_t out_len)
 {
-	QString picked;
-	bool have_ui = QCoreApplication::instance() != nullptr;
-	if (!have_ui)
-		return UWUPULSE_SAVE_FAILED;
+	if (!g_ui_ctx || g_unloading)
+		return UWUPULSE_SAVE_CANCELLED;
 	QString name = QString::fromUtf8(file_name);
 	QString filter = QString("%1 (*.%2)").arg(QString::fromUtf8(filter_name), QString::fromUtf8(extension));
-	on_ui_thread_blocking([&]() {
-		auto *parent = static_cast<QWidget *>(obs_frontend_get_main_window());
-		QString dir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-		picked = QFileDialog::getSaveFileName(parent, QString::fromUtf8(obs_module_text("SaveTitle")),
-						      QDir(dir).filePath(name), filter);
-	});
-	if (picked.isEmpty())
+	auto request = std::make_shared<SaveRequest>();
+	auto finish = [request](QString picked) {
+		{
+			std::lock_guard<std::mutex> lock(g_save_mutex);
+			request->picked = std::move(picked);
+			request->done = true;
+		}
+		g_save_cv.notify_all();
+	};
+	// Not BlockingQueuedConnection: this thread must be able to give up
+	// when the module unloads while the UI thread is busy.
+	QMetaObject::invokeMethod(
+		g_ui_ctx,
+		[name, filter, finish]() {
+			if (g_unloading) {
+				finish(QString());
+				return;
+			}
+			auto *parent = static_cast<QWidget *>(obs_frontend_get_main_window());
+			QString dir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+			finish(QFileDialog::getSaveFileName(parent, QString::fromUtf8(obs_module_text("SaveTitle")),
+							    QDir(dir).filePath(name), filter));
+		},
+		Qt::QueuedConnection);
+	QString picked;
+	{
+		std::unique_lock<std::mutex> lock(g_save_mutex);
+		g_save_cv.wait(lock, [&]() { return request->done || g_unloading; });
+		if (!request->done)
+			return UWUPULSE_SAVE_CANCELLED;
+		picked = request->picked;
+	}
+	if (picked.isEmpty() || g_unloading)
 		return UWUPULSE_SAVE_CANCELLED;
 	QByteArray path = QDir::toNativeSeparators(picked).toUtf8();
 	if (static_cast<size_t>(path.size()) + 1 > out_len)
@@ -106,15 +141,14 @@ int on_save_file(void *, const char *file_name, const char *filter_name, const c
 
 void on_changed(void *)
 {
-	if (g_refresh_queued.exchange(true))
+	if (g_unloading || g_refresh_queued.exchange(true))
 		return;
-	QCoreApplication *app = QCoreApplication::instance();
-	if (!app) {
+	if (!g_ui_ctx) {
 		g_refresh_queued = false;
 		return;
 	}
 	QMetaObject::invokeMethod(
-		app,
+		g_ui_ctx,
 		[]() {
 			g_refresh_queued = false;
 			dock_refresh();
@@ -188,6 +222,11 @@ std::string ui_url()
 	return g_core ? take(uwupulse_obs_ui_url(g_core)) : std::string();
 }
 
+std::string ui_ticket_url()
+{
+	return g_core ? take(uwupulse_obs_ui_ticket_url(g_core)) : std::string();
+}
+
 std::string overlay_url(const char *widget_id)
 {
 	if (!g_core || !widget_id || !*widget_id)
@@ -200,6 +239,9 @@ std::string overlay_url(const char *widget_id)
 bool obs_module_load(void)
 {
 	blog(LOG_INFO, "[uwupulse] UwUPulse %s", uwupulse_obs_version());
+	// Modules load on the UI thread: the context lives there.
+	if (QCoreApplication::instance())
+		uwupulse::g_ui_ctx = new QObject();
 	uwupulse::start_core();
 	uwupulse::source_register();
 	uwupulse::dock_register();
@@ -210,6 +252,16 @@ bool obs_module_load(void)
 void obs_module_unload(void)
 {
 	obs_frontend_remove_event_callback(uwupulse::on_frontend_event, nullptr);
+	// First let every core thread waiting for a save dialog go, so stopping
+	// doesn't wait on the UI thread (which is this one).
+	{
+		std::lock_guard<std::mutex> lock(uwupulse::g_save_mutex);
+		uwupulse::g_unloading = true;
+	}
+	uwupulse::g_save_cv.notify_all();
 	uwupulse_obs_stop(uwupulse::g_core);
 	uwupulse::g_core = nullptr;
+	// Drops calls still queued for the UI thread.
+	delete uwupulse::g_ui_ctx;
+	uwupulse::g_ui_ctx = nullptr;
 }

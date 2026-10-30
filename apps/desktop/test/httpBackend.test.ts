@@ -1,16 +1,80 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createHttpBackend, uiSecret } from '../src/lib/httpBackend.ts';
+import { createHttpBackend, redeemTicket, SECRET_KEY, uiAuth } from '../src/lib/httpBackend.ts';
 
 const SECRET = 'ab'.repeat(32);
 const ORIGIN = 'http://127.0.0.1:8746';
 
+const TICKET = 'cd'.repeat(32);
+
+function memoryStorage(initial: Record<string, string> = {}) {
+  const items = new Map(Object.entries(initial));
+  return {
+    items,
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+  };
+}
+
 test('the secret comes only from /ui/#s=<64 hex>', () => {
-  assert.equal(uiSecret({ pathname: '/ui/', hash: `#s=${SECRET}` }), SECRET);
-  assert.equal(uiSecret({ pathname: '/ui/index.html', hash: `#s=${SECRET}` }), SECRET);
-  assert.equal(uiSecret({ pathname: '/', hash: `#s=${SECRET}` }), null);
-  assert.equal(uiSecret({ pathname: '/ui/', hash: '' }), null);
-  assert.equal(uiSecret({ pathname: '/ui/', hash: '#s=short' }), null);
+  assert.deepEqual(uiAuth({ pathname: '/ui/', hash: `#s=${SECRET}` }), { secret: SECRET });
+  assert.deepEqual(uiAuth({ pathname: '/ui/index.html', hash: `#s=${SECRET}` }), {
+    secret: SECRET,
+  });
+  assert.equal(uiAuth({ pathname: '/', hash: `#s=${SECRET}` }), null);
+  assert.equal(uiAuth({ pathname: '/ui/', hash: '' }), null);
+  assert.equal(uiAuth({ pathname: '/ui/', hash: '#s=short' }), null);
+});
+
+test('a ticket from /ui/#t=, or the secret an earlier ticket kept in this tab', () => {
+  assert.deepEqual(uiAuth({ pathname: '/ui/', hash: `#t=${TICKET}` }), { ticket: TICKET });
+  assert.equal(uiAuth({ pathname: '/ui/', hash: '#t=nope' }), null);
+  const kept = memoryStorage({ [SECRET_KEY]: SECRET });
+  assert.deepEqual(uiAuth({ pathname: '/ui/', hash: '' }, kept), { secret: SECRET });
+  // A fresh ticket wins over what is kept; nothing kept outside /ui/.
+  assert.deepEqual(uiAuth({ pathname: '/ui/', hash: `#t=${TICKET}` }, kept), { ticket: TICKET });
+  assert.equal(uiAuth({ pathname: '/', hash: '' }, kept), null);
+  assert.equal(uiAuth({ pathname: '/ui/', hash: '' }, memoryStorage({ [SECRET_KEY]: 'x' })), null);
+  const blocked = {
+    getItem: () => {
+      throw new Error('blocked');
+    },
+  };
+  assert.equal(uiAuth({ pathname: '/ui/', hash: '' }, blocked), null);
+});
+
+test('a ticket is traded for the secret, which the backend then uses', async () => {
+  const { calls, fetch } = fakeFetch(200, { secret: SECRET });
+  const storage = memoryStorage();
+  const secret = redeemTicket(ORIGIN, TICKET, { fetch, storage });
+  assert.equal(await secret, SECRET);
+  assert.equal(calls[0]!.url, `${ORIGIN}/ui/ticket`);
+  assert.equal(calls[0]!.init.method, 'POST');
+  assert.equal(calls[0]!.init.body, JSON.stringify({ ticket: TICKET }));
+  assert.equal(storage.items.get(SECRET_KEY), SECRET);
+
+  const rpc = fakeFetch(200, {});
+  const backend = createHttpBackend({ origin: ORIGIN, secret, fetch: rpc.fetch });
+  await backend.invoke('get_state');
+  assert.equal((rpc.calls[0]!.init.headers as Record<string, string>)['X-UwUPulse-UI'], SECRET);
+});
+
+test('a spent or expired ticket rejects every call', async () => {
+  const storage = memoryStorage();
+  const secret = redeemTicket(ORIGIN, TICKET, {
+    fetch: fakeFetch(401, { error: 'ticket wrong, used or expired' }).fetch,
+    storage,
+  });
+  await assert.rejects(secret, (e) => e === 'ticket wrong, used or expired');
+  assert.equal(storage.items.size, 0);
+  const rpc = fakeFetch(200, {});
+  const backend = createHttpBackend({ origin: ORIGIN, secret, fetch: rpc.fetch });
+  await assert.rejects(backend.invoke('get_state'), (e) => e === 'ticket wrong, used or expired');
+  assert.equal(rpc.calls.length, 0);
+  // A reply without a proper secret counts as a failure too.
+  await assert.rejects(
+    redeemTicket(ORIGIN, TICKET, { fetch: fakeFetch(200, { secret: 'x' }).fetch }),
+  );
 });
 
 function fakeFetch(status: number, body: unknown) {

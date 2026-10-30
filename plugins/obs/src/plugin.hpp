@@ -14,6 +14,9 @@ uwupulse_obs *core();
 
 // The dock page ("http://127.0.0.1:<port>/ui/#s=..."); empty without a core.
 std::string ui_url();
+// The page for the system browser with a one-time ticket instead of the
+// secret ("http://127.0.0.1:<port>/ui/#t=..."); empty without a core.
+std::string ui_ticket_url();
 // The overlay URL of a widget with the current port and token; empty for an
 // unknown id or without a core.
 std::string overlay_url(const char *widget_id);

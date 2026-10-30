@@ -11,7 +11,7 @@
 
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { listen as tauriListen, type UnlistenFn } from '@tauri-apps/api/event';
-import { createHttpBackend, uiSecret } from './lib/httpBackend.ts';
+import { createHttpBackend, redeemTicket, uiAuth } from './lib/httpBackend.ts';
 import type { UpdateChannel } from './lib/prefs.ts';
 import type { ProjectPage, UpdateInfo } from './lib/updates.ts';
 import type { WidgetConfig } from './lib/widget.ts';
@@ -132,10 +132,31 @@ export interface HostInfo {
 /** True inside the Tauri webview. */
 export const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
-const secret = !inTauri && typeof window !== 'undefined' ? uiSecret(window.location) : null;
+function tabStorage(): Storage | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+const auth =
+  !inTauri && typeof window !== 'undefined' ? uiAuth(window.location, tabStorage()) : null;
+
+/** The secret, or for a page opened with a ticket the secret it buys (the ticket leaves the URL). */
+function uiSecretOf(found: NonNullable<typeof auth>): string | Promise<string> {
+  if ('secret' in found) return found.secret;
+  const secret = redeemTicket(window.location.origin, found.ticket, { storage: tabStorage() });
+  try {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch {
+    // Only cosmetic: the ticket is spent either way.
+  }
+  return secret;
+}
 
 /** How commands and events travel: Tauri IPC, the core's `/ui` over HTTP, or the dev mock. */
-export const backendKind: 'tauri' | 'http' | 'mock' = inTauri ? 'tauri' : secret ? 'http' : 'mock';
+export const backendKind: 'tauri' | 'http' | 'mock' = inTauri ? 'tauri' : auth ? 'http' : 'mock';
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 type Listen = <T>(event: string, handler: (payload: T) => void) => Promise<UnlistenFn>;
@@ -145,8 +166,8 @@ let backend: { invoke: Invoke; listen: Listen } | null = inTauri
       invoke: (command, args) => tauriInvoke(command, args),
       listen: (event, handler) => tauriListen(event, (e) => handler(e.payload as never)),
     }
-  : secret
-    ? createHttpBackend({ origin: window.location.origin, secret })
+  : auth
+    ? createHttpBackend({ origin: window.location.origin, secret: uiSecretOf(auth) })
     : null;
 
 async function getBackend() {

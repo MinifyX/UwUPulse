@@ -8,10 +8,15 @@
 //!   `GET /ui/events` (WebSocket, `{"event", "payload"}`): only from loopback,
 //!   only without an `Origin` or with the server's own, and only with the
 //!   secret of this run (`X-UwUPulse-UI` / `?s=`).
+//! - `POST /ui/ticket` (`{"ticket"}` → `{"secret"}`): trades a one-time ticket
+//!   from [`Pulse::ui_ticket_url`] for the secret, for a page opened in a
+//!   browser outside the host. Same loopback and origin rules; each ticket
+//!   works once and only until it expires.
 
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Component, Path as FsPath, PathBuf};
 use std::sync::Arc;
+use std::time::Instant;
 
 use axum::body::{Body, Bytes};
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
@@ -25,8 +30,8 @@ use serde_json::{json, Value};
 use subtle::ConstantTimeEq;
 
 use crate::commands::{self, UiEvents};
-use crate::hub::Inner;
-use crate::Pulse;
+use crate::hub::{Inner, UiState};
+use crate::{Pulse, Settings};
 
 /// The secret on `/ui/rpc`.
 pub const SECRET_HEADER: &str = "x-uwupulse-ui";
@@ -34,13 +39,20 @@ pub const SECRET_HEADER: &str = "x-uwupulse-ui";
 /// (≤ 64 KiB as JSON, a little more escaped).
 const MAX_RPC_BODY: usize = 256 * 1024;
 
-/// What the page may load and talk to: like the Tauri window's CSP, with the
-/// server itself instead of Tauri's IPC.
-const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; \
+/// What the page may load and talk to: like the Tauri window's CSP, with
+/// this server (and only on its own port) instead of Tauri's IPC.
+fn csp(port: u16) -> String {
+    format!(
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; \
 img-src 'self' data:; font-src 'self' data:; \
-connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*; \
-frame-src http://127.0.0.1:* http://localhost:*; object-src 'none'; base-uri 'none'; \
-form-action 'none'; frame-ancestors 'none'";
+connect-src 'self' http://127.0.0.1:{port} ws://127.0.0.1:{port}; \
+frame-src http://127.0.0.1:{port} http://localhost:{port}; object-src 'none'; base-uri 'none'; \
+form-action 'none'; frame-ancestors 'none'"
+    )
+}
+
+/// A ticket is 64 hex digits; anything longer is not looked at.
+const MAX_TICKET_BODY: usize = 1024;
 
 pub(super) fn router(inner: Arc<Inner>) -> Router<Arc<Inner>> {
     let guarded = Router::new()
@@ -49,6 +61,10 @@ pub(super) fn router(inner: Arc<Inner>) -> Router<Arc<Inner>> {
         .layer(DefaultBodyLimit::max(MAX_RPC_BODY))
         .route_layer(middleware::from_fn_with_state(inner, guard));
     Router::new()
+        .route(
+            "/ui/ticket",
+            post(ticket).layer(DefaultBodyLimit::max(MAX_TICKET_BODY)),
+        )
         .route("/ui", get(|| async { Redirect::permanent("/ui/") }))
         .route("/ui/", get(index))
         .route("/ui/{*path}", get(file))
@@ -63,6 +79,15 @@ pub(crate) fn check_access(
     secret: &str,
     port: u16,
 ) -> Result<(), StatusCode> {
+    check_caller(peer, origin, port)?;
+    match given {
+        Some(g) if bool::from(g.as_bytes().ct_eq(secret.as_bytes())) => Ok(()),
+        _ => Err(StatusCode::UNAUTHORIZED),
+    }
+}
+
+/// Only loopback, and only without an `Origin` or with the server's own.
+fn check_caller(peer: IpAddr, origin: Option<&str>, port: u16) -> Result<(), StatusCode> {
     if !peer.is_loopback() {
         return Err(StatusCode::FORBIDDEN);
     }
@@ -75,9 +100,56 @@ pub(crate) fn check_access(
             return Err(StatusCode::FORBIDDEN);
         }
     }
+    Ok(())
+}
+
+/// IPv4 behind an IPv4-mapped IPv6 address, so loopback is recognised.
+fn plain_ip(peer: SocketAddr) -> IpAddr {
+    match peer.ip() {
+        IpAddr::V6(v6) => v6.to_ipv4_mapped().map_or(IpAddr::V6(v6), IpAddr::V4),
+        ip => ip,
+    }
+}
+
+/// Takes `given` out of the waiting tickets if it is one and still valid.
+/// Expired tickets are dropped on the way; a ticket never works twice.
+pub(crate) fn redeem(ui: &UiState, given: &str, now: Instant) -> bool {
+    let mut tickets = ui.tickets.lock();
+    let found = tickets
+        .iter()
+        .position(|(t, _)| bool::from(t.as_bytes().ct_eq(given.as_bytes())));
+    let valid = found.is_some_and(|i| tickets.remove(i).1 > now);
+    tickets.retain(|(_, expires)| *expires > now);
+    valid
+}
+
+async fn ticket(
+    State(inner): State<Arc<Inner>>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let Some(ui) = inner.ui.as_ref() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let origin = headers.get(header::ORIGIN).and_then(|v| v.to_str().ok());
+    let port = inner.server_status.lock().port;
+    if check_caller(plain_ip(peer), origin, port).is_err() {
+        return error(StatusCode::FORBIDDEN, "not allowed".into());
+    }
+    let given = serde_json::from_slice::<Value>(&body)
+        .ok()
+        .and_then(|v| v.get("ticket")?.as_str().map(str::to_owned));
     match given {
-        Some(g) if bool::from(g.as_bytes().ct_eq(secret.as_bytes())) => Ok(()),
-        _ => Err(StatusCode::UNAUTHORIZED),
+        Some(given) if redeem(ui, &given, Instant::now()) => (
+            [(header::CACHE_CONTROL, "no-store")],
+            Json(json!({ "secret": ui.secret })),
+        )
+            .into_response(),
+        _ => error(
+            StatusCode::UNAUTHORIZED,
+            "ticket wrong, used or expired".into(),
+        ),
     }
 }
 
@@ -98,11 +170,13 @@ async fn guard(
         .query()
         .and_then(|q| q.split('&').find_map(|kv| kv.strip_prefix("s=")));
     let port = inner.server_status.lock().port;
-    let peer = match peer.ip() {
-        IpAddr::V6(v6) => v6.to_ipv4_mapped().map_or(IpAddr::V6(v6), IpAddr::V4),
-        ip => ip,
-    };
-    if let Err(status) = check_access(peer, origin, from_header.or(from_query), &ui.secret, port) {
+    if let Err(status) = check_access(
+        plain_ip(peer),
+        origin,
+        from_header.or(from_query),
+        &ui.secret,
+        port,
+    ) {
         let msg = match status {
             StatusCode::UNAUTHORIZED => "secret missing or wrong",
             _ => "not allowed",
@@ -149,10 +223,36 @@ async fn rpc(
     };
     let host = ui.host.clone();
     let pulse = Pulse(inner.clone());
+    if command == "set_settings" {
+        if let Some(early) = restart_later(&pulse, &host, &args) {
+            return early;
+        }
+    }
     match commands::dispatch(&pulse, &host, &command, args).await {
         Ok(v) => ([(header::CACHE_CONTROL, "no-store")], Json(v)).into_response(),
         Err(e) => error(StatusCode::BAD_REQUEST, e),
     }
+}
+
+/// `set_settings` that restarts the server: the restart would end the very
+/// connection this answer goes out on. So the settings are checked here,
+/// answered, and applied in a task of their own; the page hears how it went
+/// through `pulse://state` (a port that is taken leaves the old settings).
+fn restart_later(pulse: &Pulse, host: &Arc<dyn commands::Host>, args: &Value) -> Option<Response> {
+    let new: Settings = serde_json::from_value(args.get("settings")?.clone()).ok()?;
+    if !pulse.settings_need_restart(&new) {
+        return None;
+    }
+    if let Err(e) = crate::config::check_settings(&new) {
+        return Some(error(StatusCode::BAD_REQUEST, e));
+    }
+    let (pulse, host, args) = (pulse.clone(), host.clone(), args.clone());
+    pulse.0.rt.clone().spawn(async move {
+        if let Err(e) = commands::dispatch(&pulse, &host, "set_settings", args).await {
+            log::warn!("settings not applied: {e}");
+        }
+    });
+    Some(([(header::CACHE_CONTROL, "no-store")], Json(new)).into_response())
 }
 
 fn error(status: StatusCode, msg: String) -> Response {
@@ -297,10 +397,10 @@ async fn serve_file(inner: &Inner, rel: &str) -> Response {
         HeaderValue::from_static("no-referrer"),
     );
     if ty.starts_with("text/html") {
-        h.insert(
-            header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static(CSP),
-        );
+        let port = inner.server_status.lock().port;
+        if let Ok(csp) = HeaderValue::from_str(&csp(port)) {
+            h.insert(header::CONTENT_SECURITY_POLICY, csp);
+        }
         h.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
     }
     res
@@ -336,6 +436,14 @@ mod tests {
         );
         assert_eq!(ok(lo, None, None), Err(StatusCode::UNAUTHORIZED));
         assert_eq!(ok(lo, None, Some("s3cre")), Err(StatusCode::UNAUTHORIZED));
+    }
+
+    #[test]
+    fn csp_names_only_the_own_port() {
+        let csp = csp(8747);
+        assert!(csp.contains("connect-src 'self' http://127.0.0.1:8747 ws://127.0.0.1:8747;"));
+        assert!(csp.contains("frame-src http://127.0.0.1:8747 http://localhost:8747;"));
+        assert!(!csp.contains(":*"));
     }
 
     #[test]

@@ -147,7 +147,13 @@ impl log::Log for ObsLogger {
         if !self.enabled(record.metadata()) {
             return;
         }
-        let Some(sink) = *LOG_SINK.read() else {
+        // The read lock stays held across the callback, so `uwupulse_obs_stop`
+        // (which takes the write lock) waits for a log line in flight
+        // instead of returning while the plugin's code still runs.
+        // `read_recursive`: a log line from inside the callback can't
+        // deadlock against a waiting writer.
+        let sink_guard = LOG_SINK.read_recursive();
+        let Some(sink) = *sink_guard else {
             return;
         };
         let level = match record.level() {
@@ -161,6 +167,7 @@ impl log::Log for ObsLogger {
             // SAFETY: see `impl Send for LogSink`.
             unsafe { (sink.f)(sink.ctx, level, msg.as_ptr()) }
         }
+        drop(sink_guard);
     }
 
     fn flush(&self) {}
@@ -458,7 +465,8 @@ pub unsafe extern "C" fn uwupulse_obs_start(cfg: *const UwupulseObsConfig) -> *m
 }
 
 /// Stops the hub and frees the handle; NULL is fine. No callback runs
-/// after it returns, apart from a save dialog that is still open.
+/// after it returns, apart from a save dialog that is still open (the
+/// plugin cancels those first) and a log line in flight, which it waits for.
 ///
 /// # Safety
 /// `h` is NULL or a handle from [`uwupulse_obs_start`] not stopped yet.
@@ -487,6 +495,25 @@ pub unsafe extern "C" fn uwupulse_obs_ui_url(h: *const UwupulseObs) -> *mut c_ch
             return ptr::null_mut();
         };
         h.pulse.ui_url().map_or(ptr::null_mut(), into_c)
+    })
+}
+
+/// The dock's address for the system browser,
+/// `http://127.0.0.1:<port>/ui/#t=<ticket>`: a one-time ticket (30 s) the
+/// page trades for the secret, so the secret never shows up in the
+/// browser's command line or history. Free with [`uwupulse_obs_free_string`];
+/// NULL for a NULL handle.
+///
+/// # Safety
+/// `h` is NULL or a running handle.
+#[no_mangle]
+pub unsafe extern "C" fn uwupulse_obs_ui_ticket_url(h: *const UwupulseObs) -> *mut c_char {
+    guard(ptr::null_mut(), || {
+        // SAFETY: the caller's promise.
+        let Some(h) = (unsafe { h.as_ref() }) else {
+            return ptr::null_mut();
+        };
+        h.pulse.ui_ticket_url().map_or(ptr::null_mut(), into_c)
     })
 }
 

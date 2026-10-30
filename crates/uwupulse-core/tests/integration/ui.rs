@@ -42,6 +42,11 @@ impl std::ops::Deref for Ui {
 
 /// A hub with `/ui` on, serving `<tmp>/ui`.
 async fn start_ui() -> Ui {
+    start_ui_with(|_| {}).await
+}
+
+/// Like [`start_ui`], with options adjusted by `f`.
+async fn start_ui_with(f: impl FnOnce(&mut PulseOptions)) -> Ui {
     let files = tempfile::tempdir().unwrap();
     let ui_dir = files.path().join("ui");
     std::fs::create_dir_all(ui_dir.join("assets")).unwrap();
@@ -57,7 +62,8 @@ async fn start_ui() -> Ui {
         o.ui = Some(UiOptions {
             dir: ui_dir.clone(),
             host: Arc::new(ObsHost),
-        })
+        });
+        f(o);
     })
     .await;
     let url = env.pulse.ui_url().unwrap();
@@ -72,9 +78,13 @@ async fn start_ui() -> Ui {
 }
 
 async fn rpc(env: &Env, secret: &str, command: &str, args: Value) -> (u16, Value) {
+    rpc_at(env.port, secret, command, args).await
+}
+
+async fn rpc_at(port: u16, secret: &str, command: &str, args: Value) -> (u16, Value) {
     let body = args.to_string();
     let r = http_body(
-        env.port,
+        port,
         "POST",
         &format!("/ui/rpc/{command}"),
         &[
@@ -263,4 +273,130 @@ async fn static_files() {
         assert!(r.status == 404 || r.status == 400, "{path}: {}", r.status);
         assert!(!r.text().contains("nope"), "{path}");
     }
+}
+
+/// `POST /ui/ticket` with `ticket`, from the page's own origin.
+async fn redeem(env: &Env, ticket: &str) -> (u16, Value) {
+    let own = format!("http://127.0.0.1:{}", env.port);
+    let body = json!({ "ticket": ticket }).to_string();
+    let r = http_body(
+        env.port,
+        "POST",
+        "/ui/ticket",
+        &[("Content-Type", "application/json"), ("Origin", &own)],
+        body.as_bytes(),
+    )
+    .await;
+    (
+        r.status,
+        serde_json::from_slice(&r.body).unwrap_or(Value::Null),
+    )
+}
+
+fn ticket_of(env: &Env) -> String {
+    let url = env.pulse.ui_ticket_url().unwrap();
+    let prefix = format!("http://127.0.0.1:{}/ui/#t=", env.port);
+    let ticket = url.strip_prefix(&prefix).expect(&url).to_owned();
+    assert_eq!(ticket.len(), 64);
+    ticket
+}
+
+#[tokio::test]
+async fn a_ticket_buys_the_secret_once() {
+    let ui = start_ui().await;
+    let env = &ui.env;
+    let ticket = ticket_of(env);
+    assert!(!ticket.contains(&ui.secret));
+
+    // Wrong: refused, and the real one still works afterwards.
+    assert_eq!(redeem(env, &"0".repeat(64)).await.0, 401);
+    assert_eq!(redeem(env, "").await.0, 401);
+    let (status, body) = redeem(env, &ticket).await;
+    assert_eq!(status, 200, "{body}");
+    assert_eq!(body["secret"], ui.secret.as_str());
+    // Used twice: refused.
+    assert_eq!(redeem(env, &ticket).await.0, 401);
+
+    // Only from loopback pages of this server.
+    let other = ticket_of(env);
+    let body = json!({ "ticket": other }).to_string();
+    let foreign = http_body(
+        env.port,
+        "POST",
+        "/ui/ticket",
+        &[("Origin", "http://example.com")],
+        body.as_bytes(),
+    )
+    .await;
+    assert_eq!(foreign.status, 403);
+    assert_eq!(redeem(env, &other).await.0, 200);
+}
+
+#[tokio::test]
+async fn an_expired_ticket_is_refused() {
+    let ui = start_ui_with(|o| o.ui_ticket_ttl = std::time::Duration::ZERO).await;
+    let ticket = ticket_of(&ui.env);
+    assert_eq!(redeem(&ui.env, &ticket).await.0, 401);
+}
+
+#[tokio::test]
+async fn a_new_port_is_answered_before_the_restart() {
+    let free = || {
+        std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port()
+    };
+    let (first, second) = (free(), free());
+    let ui = start_ui_with(|o| {
+        o.port_override = None;
+        std::fs::write(
+            o.config_dir.join("settings.json"),
+            format!(r#"{{"lanEnabled":false,"port":{first}}}"#),
+        )
+        .unwrap();
+    })
+    .await;
+    let env = &ui.env;
+    assert_eq!(env.port, first);
+    let (_, mut settings) = rpc(env, &ui.secret, "get_settings", Value::Null).await;
+
+    // An invalid port is refused right away, without a restart.
+    settings["port"] = json!(80);
+    let (status, e) = rpc(
+        env,
+        &ui.secret,
+        "set_settings",
+        json!({ "settings": settings }),
+    )
+    .await;
+    assert_eq!(status, 400, "{e}");
+
+    let mut events = env.pulse.subscribe();
+    settings["port"] = json!(second);
+    // Restarting inline held the answer until the old server gave up on
+    // this very connection (3 s).
+    let (status, saved) = tokio::time::timeout(
+        std::time::Duration::from_secs(1),
+        rpc(
+            env,
+            &ui.secret,
+            "set_settings",
+            json!({ "settings": settings }),
+        ),
+    )
+    .await
+    .expect("answered before the server went away");
+    assert_eq!(status, 200, "{saved}");
+    assert_eq!(saved["port"], second);
+
+    if env.pulse.server_info().port != second {
+        crate::wait_for(&mut events, |_| {
+            (env.pulse.server_info().port == second).then_some(())
+        })
+        .await;
+    }
+    let (status, now) = rpc_at(second, &ui.secret, "get_settings", Value::Null).await;
+    assert_eq!((status, now["port"].clone()), (200, json!(second)));
 }

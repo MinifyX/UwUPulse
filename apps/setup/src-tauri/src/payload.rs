@@ -3,7 +3,7 @@
 //! zstd, unpacked next to where it goes and then renamed into place.
 
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The compressor's window (`WINDOW_LOG` in `build.rs`), which the
 /// decompressor has to allow.
@@ -84,10 +84,45 @@ pub fn unpack(
     Ok(())
 }
 
+/// 16 random bytes as hex: names nobody can guess ahead of the setup.
+pub fn random_name() -> std::io::Result<String> {
+    let mut bytes = [0u8; 16];
+    getrandom::fill(&mut bytes).map_err(|e| std::io::Error::other(e.to_string()))?;
+    Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
+}
+
+/// A new folder `<prefix><random>` in `parent`, made by `create`, which must
+/// fail with `AlreadyExists` for a folder that is there already (as
+/// `std::fs::create_dir` does). So a folder someone else put in place, even
+/// under a guessed name, is never taken over.
+pub fn fresh_dir(
+    parent: &Path,
+    prefix: &str,
+    create: impl Fn(&Path) -> std::io::Result<()>,
+) -> std::io::Result<PathBuf> {
+    let mut last = None;
+    for _ in 0..4 {
+        let path = parent.join(format!("{prefix}{}", random_name()?));
+        match create(&path) {
+            Ok(()) => return Ok(path),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => last = Some(e),
+            Err(e) => return Err(e),
+        }
+    }
+    Err(last.unwrap_or_else(|| std::io::ErrorKind::AlreadyExists.into()))
+}
+
 /// Puts `incoming` where `target` is, and what was there before away. The old
-/// version is moved aside first, so a failure leaves one of the two in place.
+/// version is moved aside first (under a random name, so nothing planted in
+/// advance can block it), so a failure leaves one of the two in place.
 pub fn swap_in(incoming: &Path, target: &Path) -> Result<(), String> {
-    let aside = target.with_extension(format!("old-{}", std::process::id()));
+    let aside = target.with_extension(format!(
+        "old-{}",
+        random_name().map_err(|e| format!("Couldn't pick a name: {e}"))?
+    ));
+    if std::fs::symlink_metadata(&aside).is_ok() {
+        return Err(format!("{} is in the way.", aside.display()));
+    }
     let had_old = std::fs::symlink_metadata(target).is_ok();
     if had_old {
         std::fs::rename(target, &aside)
@@ -198,5 +233,14 @@ mod tests {
             1,
             "nothing left aside"
         );
+    }
+
+    #[test]
+    fn random_names_are_new_each_time() {
+        let a = random_name().unwrap();
+        let b = random_name().unwrap();
+        assert_eq!(a.len(), 32);
+        assert!(a.bytes().all(|c| c.is_ascii_hexdigit()));
+        assert_ne!(a, b);
     }
 }

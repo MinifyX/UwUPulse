@@ -33,9 +33,11 @@ QCefWidget *g_browser = nullptr;
 std::string g_url;
 bool g_exiting = false;
 
+// With a one-time ticket: the secret itself would end up in the browser's
+// command line and history.
 void open_in_system_browser()
 {
-	std::string url = ui_url();
+	std::string url = ui_ticket_url();
 	if (!url.empty())
 		QDesktopServices::openUrl(QUrl(QString::fromStdString(url)));
 }

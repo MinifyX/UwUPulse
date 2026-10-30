@@ -12,11 +12,68 @@ export interface Backend {
   listen: <T>(event: string, handler: (payload: T) => void) => Promise<Unlisten>;
 }
 
-/** The secret of this run, from `/ui/#s=<secret>`; null when the page isn't served that way. */
-export function uiSecret(location: { pathname: string; hash: string }): string | null {
+const HEX64 = /^[0-9a-f]{64}$/;
+/** Where a page opened with a ticket keeps the secret: this tab only, never in the URL. */
+export const SECRET_KEY = 'uwupulse-ui-secret';
+
+/**
+ * How the page gets in when the core serves it at `/ui/`: the secret of this
+ * run (`#s=`, OBS's own dock), a one-time ticket (`#t=`, the system browser)
+ * or the secret an earlier ticket bought in this tab. Null when the page
+ * isn't served that way.
+ */
+export type UiAuth = { secret: string } | { ticket: string };
+
+export function uiAuth(
+  location: { pathname: string; hash: string },
+  storage?: Pick<Storage, 'getItem'> | null,
+): UiAuth | null {
   if (!location.pathname.startsWith('/ui/')) return null;
-  const secret = new URLSearchParams(location.hash.replace(/^#/, '')).get('s');
-  return secret && /^[0-9a-f]{64}$/.test(secret) ? secret : null;
+  const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const secret = params.get('s');
+  if (secret && HEX64.test(secret)) return { secret };
+  const ticket = params.get('t');
+  if (ticket && HEX64.test(ticket)) return { ticket };
+  let kept: string | null = null;
+  try {
+    kept = storage?.getItem(SECRET_KEY) ?? null;
+  } catch {
+    // Storage blocked: the page needs a new ticket.
+  }
+  return kept && HEX64.test(kept) ? { secret: kept } : null;
+}
+
+/**
+ * Trades a ticket (single use, 30 s) for the secret at `POST /ui/ticket` and
+ * keeps it in `storage` for reloads of this tab. Rejects with the error text.
+ */
+export async function redeemTicket(
+  origin: string,
+  ticket: string,
+  options: { fetch?: typeof fetch; storage?: Pick<Storage, 'setItem'> | null } = {},
+): Promise<string> {
+  const doFetch = options.fetch ?? ((input, init) => fetch(input, init));
+  const response = await doFetch(`${origin}/ui/ticket`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticket }),
+  });
+  const body: unknown = await response.json().catch(() => null);
+  const field = (name: string) =>
+    body && typeof body === 'object' && name in body
+      ? (body as Record<string, unknown>)[name]
+      : null;
+  const secret = field('secret');
+  if (!response.ok || typeof secret !== 'string' || !HEX64.test(secret)) {
+    const error = field('error');
+    throw typeof error === 'string' ? error : `HTTP ${response.status}`;
+  }
+  try {
+    options.storage?.setItem(SECRET_KEY, secret);
+  } catch {
+    // Without storage a reload needs a new ticket; nothing else changes.
+  }
+  return secret;
 }
 
 type Socket = Pick<WebSocket, 'close'> & {
@@ -27,7 +84,8 @@ type Socket = Pick<WebSocket, 'close'> & {
 export interface HttpBackendOptions {
   /** The page's own origin, e.g. `http://127.0.0.1:8746`. */
   origin: string;
-  secret: string;
+  /** The secret, or its promise while a ticket is being traded. */
+  secret: string | Promise<string>;
   fetch?: typeof fetch;
   openSocket?: (url: string) => Socket;
   /** Reconnect delays in ms, the last one repeats. */
@@ -44,11 +102,18 @@ export function createHttpBackend(options: HttpBackendOptions): Backend {
   let socket: Socket | null = null;
   let started = false;
   let failures = 0;
-
-  const wsUrl = `${options.origin.replace(/^http/, 'ws')}/ui/events?s=${options.secret}`;
+  let known = typeof options.secret === 'string' ? options.secret : null;
+  const secret = Promise.resolve(options.secret).then((s) => (known = s));
+  // A failed ticket rejects every call; the socket just never opens.
+  secret.catch(() => undefined);
 
   function connect() {
-    const ws = openSocket(wsUrl);
+    if (known) open(known);
+    else void secret.then(open, () => undefined);
+  }
+
+  function open(key: string) {
+    const ws = openSocket(`${options.origin.replace(/^http/, 'ws')}/ui/events?s=${key}`);
     socket = ws;
     ws.onmessage = (message) => {
       failures = 0;
@@ -72,9 +137,10 @@ export function createHttpBackend(options: HttpBackendOptions): Backend {
 
   return {
     async invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+      const key = await secret;
       const response = await doFetch(`${options.origin}/ui/rpc/${encodeURIComponent(command)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-UwUPulse-UI': options.secret },
+        headers: { 'Content-Type': 'application/json', 'X-UwUPulse-UI': key },
         body: JSON.stringify(args ?? {}),
       });
       const body: unknown = await response.json().catch(() => null);

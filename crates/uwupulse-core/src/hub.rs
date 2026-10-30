@@ -85,6 +85,22 @@ pub(crate) struct UiState {
     pub host: Arc<dyn crate::commands::Host>,
     /// Required on `/ui/rpc` and `/ui/events`; new with every start.
     pub secret: String,
+    /// One-time tickets for a browser outside the host (`/ui/#t=`), each
+    /// traded once for the secret at `POST /ui/ticket` before it expires.
+    pub tickets: Mutex<Vec<(String, Instant)>>,
+    /// How long a ticket lasts ([`crate::PulseOptions::ui_ticket_ttl`]).
+    pub ticket_ttl: Duration,
+}
+
+/// At most this many tickets wait at a time; the oldest goes first.
+pub(crate) const MAX_UI_TICKETS: usize = 4;
+
+/// 32 random bytes as hex: goes into URL fragments and queries unescaped.
+pub(crate) fn random_hex() -> String {
+    uwupulse_proto::random_bytes::<32>()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 pub(crate) struct Inner {

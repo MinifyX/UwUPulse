@@ -7,8 +7,12 @@
 //! - **macOS:** `~/Library/Application Support/obs-studio/plugins/uwupulse.plugin`
 //! - **Windows:** `%ProgramData%\obs-studio\plugins\uwupulse` — OBS 31 has no
 //!   per-user folder on Windows. The setup runs without administrator rights;
-//!   ProgramData lets every user create folders, and the setup gives the
-//!   plugin's folder an access list that lets other users only read it.
+//!   ProgramData lets every user create folders. So every folder the setup
+//!   makes there is created with an access list that lets other users only
+//!   read it (never protected afterwards, which would leave a gap), working
+//!   folders get random names and must not exist yet, and folders that are
+//!   already there must belong to this user, SYSTEM, Administrators or
+//!   TrustedInstaller, or the setup stops.
 //! - **Linux:** `$XDG_CONFIG_HOME/obs-studio/plugins/uwupulse`
 //!
 //! A running OBS is never touched: the plugin it loaded stays in use until
@@ -160,15 +164,15 @@ impl Obs {
         progress: &mut dyn FnMut(f64),
     ) -> Result<Installed, String> {
         let target = self.plugin_dir();
-        std::fs::create_dir_all(&self.plugins)
-            .map_err(|e| denied(format!("Couldn't create {}: {e}", self.plugins.display())))?;
-        let staging = self
-            .plugins
-            .join(format!(".uwupulse-setup-{}", std::process::id()));
-        payload::remove_tree(&staging);
-        std::fs::create_dir_all(&staging)
-            .map_err(|e| denied(format!("Couldn't create {}: {e}", staging.display())))?;
-        let result = protect(&staging)
+        self.prepare_plugins()?;
+        let staging =
+            payload::fresh_dir(&self.plugins, ".uwupulse-setup-", create_new).map_err(|e| {
+                denied(format!(
+                    "Couldn't create a folder in {}: {e}",
+                    self.plugins.display()
+                ))
+            })?;
+        let result = check_shared(&staging)
             .and_then(|()| {
                 payload::unpack(
                     PAYLOAD,
@@ -179,6 +183,7 @@ impl Obs {
                     progress,
                 )
             })
+            .and_then(|()| protect(&staging.join(PLUGIN)))
             .and_then(|()| {
                 payload::swap_in(&staging.join(PLUGIN), &target).map_err(|e| {
                     if cfg!(windows) && running() {
@@ -194,6 +199,22 @@ impl Obs {
             dir: target.display().to_string(),
             version: version.to_string(),
         })
+    }
+
+    /// Makes sure the plugins folder is there. On Windows `obs-studio` and
+    /// `plugins` are created protected when missing, and checked when not.
+    #[cfg(windows)]
+    fn prepare_plugins(&self) -> Result<(), String> {
+        if let Some(obs_studio) = self.plugins.parent() {
+            ensure_shared(obs_studio)?;
+        }
+        ensure_shared(&self.plugins)
+    }
+
+    #[cfg(not(windows))]
+    fn prepare_plugins(&self) -> Result<(), String> {
+        std::fs::create_dir_all(&self.plugins)
+            .map_err(|e| format!("Couldn't create {}: {e}", self.plugins.display()))
     }
 
     /// Removes an installed plugin and, unless kept, its data.
@@ -264,6 +285,85 @@ fn protect(dir: &Path) -> Result<(), String> {
 #[cfg(not(windows))]
 fn protect(_dir: &Path) -> Result<(), String> {
     Ok(())
+}
+
+/// Creates a folder that must not exist yet; on Windows protected from the
+/// start (see [`protect`]).
+fn create_new(dir: &Path) -> std::io::Result<()> {
+    #[cfg(windows)]
+    {
+        system::create_dir_shared(dir)
+    }
+    #[cfg(not(windows))]
+    {
+        std::fs::create_dir(dir)
+    }
+}
+
+/// Windows: `dir` exists afterwards, and either the setup made it (protected)
+/// or it belongs to someone trusted.
+#[cfg(windows)]
+fn ensure_shared(dir: &Path) -> Result<(), String> {
+    match system::create_dir_shared(dir) {
+        Ok(()) => check_shared(dir),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => check_shared(dir),
+        Err(e) => Err(denied(format!("Couldn't create {}: {e}", dir.display()))),
+    }
+}
+
+/// Windows: `dir` is a real folder (no link or junction pointing elsewhere)
+/// owned by this user, SYSTEM, Administrators or TrustedInstaller.
+#[cfg(windows)]
+fn check_shared(dir: &Path) -> Result<(), String> {
+    use std::os::windows::fs::MetadataExt;
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+    let meta = std::fs::symlink_metadata(dir)
+        .map_err(|e| format!("Couldn't read {}: {e}", dir.display()))?;
+    if !meta.is_dir() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        return Err(foreign_message(dir, "link", system::is_german()));
+    }
+    let owner = system::owner_sid(dir)?;
+    if trusted_owner(&owner, &system::current_user_sid()?) {
+        Ok(())
+    } else {
+        Err(foreign_message(dir, &owner, system::is_german()))
+    }
+}
+
+#[cfg(not(windows))]
+fn check_shared(_dir: &Path) -> Result<(), String> {
+    Ok(())
+}
+
+/// Owners whose folders in ProgramData the setup builds on: this user and
+/// the system's own accounts. Anyone else could change the plugin.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn trusted_owner(owner: &str, user: &str) -> bool {
+    const SYSTEM: &[&str] = &[
+        "S-1-5-18",                                                       // SYSTEM
+        "S-1-5-32-544",                                                   // Administrators
+        "S-1-5-80-956008885-3418522649-1831038044-1858292187-2669553620", // TrustedInstaller
+    ];
+    owner == user || SYSTEM.contains(&owner)
+}
+
+/// Why the setup stops at a folder it can't trust, in the system's language.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn foreign_message(dir: &Path, owner: &str, german: bool) -> String {
+    let dir = dir.display();
+    if german {
+        format!(
+            "Der Ordner {dir} gehört einem anderen Benutzer ({owner}) oder ist eine Verknüpfung. \
+             Das OBS-Plugin wird dort nicht installiert, weil dieser Benutzer es verändern könnte.\n\n\
+             Bitte einen Administrator, den Ordner zu prüfen, oder installiere nur die Desktop-App."
+        )
+    } else {
+        format!(
+            "The folder {dir} belongs to another user ({owner}) or is a link. \
+             The OBS plugin isn't installed there, because that user could change it.\n\n\
+             Ask an administrator to check the folder, or install only the desktop app."
+        )
+    }
 }
 
 /// A clearer word for the one failure the plugin folder has that the app's
@@ -386,6 +486,82 @@ mod tests {
             0,
             "nothing left in the plugins folder"
         );
+    }
+
+    #[test]
+    fn working_folders_get_new_random_names() {
+        let root = tempfile::tempdir().unwrap();
+        let a = payload::fresh_dir(root.path(), ".uwupulse-setup-", create_new).unwrap();
+        let b = payload::fresh_dir(root.path(), ".uwupulse-setup-", create_new).unwrap();
+        assert_ne!(a, b);
+        for dir in [&a, &b] {
+            let name = dir.file_name().unwrap().to_str().unwrap();
+            let random = name.strip_prefix(".uwupulse-setup-").unwrap();
+            assert_eq!(random.len(), 32, "{name}");
+            assert!(random.bytes().all(|c| c.is_ascii_hexdigit()), "{name}");
+            assert!(dir.is_dir());
+        }
+    }
+
+    #[test]
+    fn a_folder_that_is_there_already_is_never_taken_over() {
+        let root = tempfile::tempdir().unwrap();
+        let there = root.path().join("there");
+        std::fs::create_dir(&there).unwrap();
+        let error = create_new(&there).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+        // fresh_dir picks another name instead.
+        let names = std::cell::RefCell::new(Vec::new());
+        let dir = payload::fresh_dir(root.path(), "x-", |dir| {
+            names.borrow_mut().push(dir.to_path_buf());
+            if names.borrow().len() == 1 {
+                Err(std::io::ErrorKind::AlreadyExists.into())
+            } else {
+                create_new(dir)
+            }
+        })
+        .unwrap();
+        let names = names.into_inner();
+        assert_eq!(names.len(), 2);
+        assert_ne!(names[0], dir);
+        // … and gives up after a few tries.
+        let error = payload::fresh_dir(root.path(), "x-", |_| {
+            Err(std::io::ErrorKind::AlreadyExists.into())
+        })
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+        // Other errors stop at once.
+        let error = payload::fresh_dir(&root.path().join("missing"), "x-", create_new).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn only_the_user_and_the_system_are_trusted_owners() {
+        let user = "S-1-5-21-1-2-3-1001";
+        assert!(trusted_owner(user, user));
+        assert!(trusted_owner("S-1-5-18", user));
+        assert!(trusted_owner("S-1-5-32-544", user));
+        assert!(trusted_owner(
+            "S-1-5-80-956008885-3418522649-1831038044-1858292187-2669553620",
+            user
+        ));
+        assert!(!trusted_owner("S-1-5-21-1-2-3-1002", user));
+        assert!(!trusted_owner("S-1-5-32-545", user), "Users");
+        assert!(!trusted_owner("S-1-1-0", user), "Everyone");
+    }
+
+    #[test]
+    fn a_foreign_folder_is_explained_in_both_languages() {
+        let dir = Path::new("plugins");
+        let de = foreign_message(dir, "S-1-5-21-9", true);
+        assert!(
+            de.contains("gehört einem anderen Benutzer (S-1-5-21-9)"),
+            "{de}"
+        );
+        assert!(de.contains("Administrator"), "{de}");
+        let en = foreign_message(dir, "S-1-5-21-9", false);
+        assert!(en.contains("belongs to another user (S-1-5-21-9)"), "{en}");
+        assert!(en.contains("install only the desktop app"), "{en}");
     }
 
     #[test]

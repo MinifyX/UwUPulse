@@ -334,7 +334,7 @@ pub fn run() {
 
     #[cfg(windows)]
     if !system::webview2_installed() {
-        let (title, text) = if system_is_german() {
+        let (title, text) = if system::is_german() {
             (
                 "UwUPulse Setup",
                 "UwUPulse braucht Microsoft Edge WebView2. Soll es jetzt heruntergeladen und installiert werden?",
@@ -430,16 +430,6 @@ fn webview_data_dir() -> Option<PathBuf> {
         .tempdir_in(base)
         .map(tempfile::TempDir::keep)
         .ok()
-}
-
-#[cfg(windows)]
-fn system_is_german() -> bool {
-    use winreg::enums::HKEY_CURRENT_USER;
-    use winreg::RegKey;
-    RegKey::predef(HKEY_CURRENT_USER)
-        .open_subkey(r"Control Panel\International")
-        .and_then(|key| key.get_value::<String, _>("LocaleName"))
-        .is_ok_and(|locale| locale.to_ascii_lowercase().starts_with("de"))
 }
 
 #[cfg(test)]

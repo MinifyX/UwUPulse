@@ -13,6 +13,8 @@ tauri-build = { version = "2", features = [] }
 zstd = { version = "0.13", features = ["zstdmt"] }
 
 [dependencies]
+# Random names for the setup's working folders (payload.rs).
+getrandom.workspace = true
 semver = "1"
 serde.workspace = true
 serde_json.workspace = true
@@ -35,6 +37,7 @@ windows = { version = "0.61", features = [
   "Win32_Foundation",
   "Win32_Security",
   "Win32_Security_Authorization",
+  "Win32_Storage_FileSystem",
   "Win32_Storage_EnhancedStorage",
   "Win32_System_Com",
   "Win32_System_Com_StructuredStorage",

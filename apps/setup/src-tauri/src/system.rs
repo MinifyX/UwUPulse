@@ -11,13 +11,15 @@ use windows::core::{Interface, GUID, HSTRING, PWSTR};
 use windows::Win32::Foundation::{CloseHandle, LocalFree, HANDLE, HLOCAL, WAIT_OBJECT_0};
 use windows::Win32::Security::Authorization::{
     ConvertSidToStringSidW, ConvertStringSecurityDescriptorToSecurityDescriptorW,
-    SetNamedSecurityInfoW, SDDL_REVISION_1, SE_FILE_OBJECT,
+    GetNamedSecurityInfoW, SetNamedSecurityInfoW, SDDL_REVISION_1, SE_FILE_OBJECT,
 };
 use windows::Win32::Security::{
     GetSecurityDescriptorDacl, GetTokenInformation, TokenUser, ACL, DACL_SECURITY_INFORMATION,
-    PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, TOKEN_QUERY, TOKEN_USER,
+    OWNER_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, PSID,
+    SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER,
 };
 use windows::Win32::Storage::EnhancedStorage::PKEY_AppUserModel_ID;
+use windows::Win32::Storage::FileSystem::CreateDirectoryW;
 use windows::Win32::System::Com::StructuredStorage::PROPVARIANT;
 use windows::Win32::System::Com::Urlmon::URLDownloadToFileW;
 use windows::Win32::System::Com::{
@@ -417,17 +419,117 @@ pub fn restrict_to_user(dir: &Path) -> Result<(), String> {
 /// run what is inside: for the OBS plugin in ProgramData, which OBS loads for
 /// whoever starts it.
 pub fn restrict_to_user_shared(dir: &Path) -> Result<(), String> {
-    // 0x1200a9: read, read attributes, list and execute (FILE_GENERIC_READ |
-    // FILE_GENERIC_EXECUTE), for the built-in Users group.
-    set_access(dir, "(A;OICI;0x1200a9;;;BU)")
+    set_access(dir, SHARED_READ)
+}
+
+/// 0x1200a9: read, read attributes, list and execute (FILE_GENERIC_READ |
+/// FILE_GENERIC_EXECUTE), for the built-in Users group.
+const SHARED_READ: &str = "(A;OICI;0x1200a9;;;BU)";
+
+/// The protected access list: full control for this user, SYSTEM and
+/// Administrators, plus `extra`. This user keeps full control so later
+/// updates work without administrator rights.
+fn access_sddl(extra: &str) -> windows::core::Result<String> {
+    Ok(format!(
+        "D:P(A;OICI;FA;;;{})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA){extra}",
+        user_sid()?
+    ))
+}
+
+/// Creates `dir` with the access list of [`restrict_to_user_shared`] from
+/// the first moment, so nobody can change it between creating and
+/// protecting. Fails with `AlreadyExists` if something is there already,
+/// like `std::fs::create_dir`.
+pub fn create_dir_shared(dir: &Path) -> std::io::Result<()> {
+    let sddl = access_sddl(SHARED_READ).map_err(win_io)?;
+    // SAFETY: the strings and the attributes outlive the calls; the
+    // descriptor is freed on every path.
+    unsafe {
+        let mut descriptor = PSECURITY_DESCRIPTOR::default();
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            &HSTRING::from(sddl),
+            SDDL_REVISION_1,
+            &mut descriptor,
+            None,
+        )
+        .map_err(win_io)?;
+        let attributes = SECURITY_ATTRIBUTES {
+            nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: descriptor.0,
+            bInheritHandle: BOOL::from(false),
+        };
+        let result =
+            CreateDirectoryW(&HSTRING::from(dir.as_os_str()), Some(&attributes)).map_err(win_io);
+        let _ = LocalFree(Some(HLOCAL(descriptor.0)));
+        result
+    }
+}
+
+/// A Windows error as `io::Error`, with Win32 codes kept so `kind()` works
+/// (183 → `AlreadyExists`).
+fn win_io(error: windows::core::Error) -> std::io::Error {
+    let code = error.code().0 as u32;
+    if code & 0xFFFF_0000 == 0x8007_0000 {
+        std::io::Error::from_raw_os_error((code & 0xFFFF) as i32)
+    } else {
+        std::io::Error::other(error)
+    }
+}
+
+/// The owner of a file or folder as `S-1-…`. Follows links: check for them
+/// first.
+pub fn owner_sid(path: &Path) -> Result<String, String> {
+    let fail =
+        |e: &dyn std::fmt::Display| format!("Couldn't read the owner of {}: {e}", path.display());
+    // SAFETY: the out-pointers point at live locals; the owner SID points
+    // into the descriptor, which is freed after the SID has been copied out.
+    unsafe {
+        let mut owner = PSID::default();
+        let mut descriptor = PSECURITY_DESCRIPTOR::default();
+        let code = GetNamedSecurityInfoW(
+            &HSTRING::from(path.as_os_str()),
+            SE_FILE_OBJECT,
+            OWNER_SECURITY_INFORMATION,
+            Some(&mut owner),
+            None,
+            None,
+            None,
+            &mut descriptor,
+        );
+        if code.is_err() {
+            return Err(fail(&std::io::Error::from_raw_os_error(code.0 as i32)));
+        }
+        let mut text = PWSTR::null();
+        let result = ConvertSidToStringSidW(owner, &mut text)
+            .map_err(|e| fail(&e))
+            .and_then(|()| {
+                let sid = text.to_string().map_err(|e| fail(&e));
+                let _ = LocalFree(Some(HLOCAL(text.0.cast())));
+                sid
+            });
+        let _ = LocalFree(Some(HLOCAL(descriptor.0)));
+        result
+    }
+}
+
+/// This user's SID as `S-1-5-21-…`.
+pub fn current_user_sid() -> Result<String, String> {
+    user_sid().map_err(|e| format!("Couldn't read the user's SID: {e}"))
+}
+
+/// Whether Windows is set to German for this user.
+pub fn is_german() -> bool {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+    RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey(r"Control Panel\International")
+        .and_then(|key| key.get_value::<String, _>("LocaleName"))
+        .is_ok_and(|locale| locale.to_ascii_lowercase().starts_with("de"))
 }
 
 fn set_access(dir: &Path, extra: &str) -> Result<(), String> {
     let fail = |e: &dyn std::fmt::Display| format!("Couldn't protect {}: {e}", dir.display());
-    let sddl = format!(
-        "D:P(A;OICI;FA;;;{})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA){extra}",
-        user_sid().map_err(|e| fail(&e))?
-    );
+    let sddl = access_sddl(extra).map_err(|e| fail(&e))?;
     // SAFETY: the strings outlive the calls; the descriptor is freed after
     // its access list has been applied, on every path.
     unsafe {

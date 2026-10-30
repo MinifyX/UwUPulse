@@ -91,6 +91,9 @@ pub struct PulseOptions {
     /// HTTP (`/ui/rpc`, `/ui/events`), for a host without a webview of its
     /// own. Off (`None`) in the desktop app.
     pub ui: Option<UiOptions>,
+    /// How long a one-time ticket from [`Pulse::ui_ticket_url`] stays valid.
+    /// Tests shorten it.
+    pub ui_ticket_ttl: Duration,
     /// Chest straps at this desktop (with the `ble` feature). A host turns it
     /// off where touching Bluetooth would end the process: macOS kills an app
     /// whose Info.plist has no `NSBluetoothAlwaysUsageDescription` (OBS).
@@ -128,6 +131,7 @@ impl PulseOptions {
             app_version: env!("CARGO_PKG_VERSION").to_owned(),
             header_timeout: Duration::from_secs(10),
             ui: None,
+            ui_ticket_ttl: Duration::from_secs(30),
             ble: true,
         }
     }
@@ -223,11 +227,9 @@ impl Pulse {
             ui: opts.ui.map(|ui| hub::UiState {
                 dir: ui.dir,
                 host: ui.host,
-                // Hex: it goes into a URL fragment and a query unescaped.
-                secret: random_bytes::<32>()
-                    .iter()
-                    .map(|b| format!("{b:02x}"))
-                    .collect(),
+                secret: hub::random_hex(),
+                tickets: Mutex::new(Vec::new()),
+                ticket_ttl: opts.ui_ticket_ttl,
             }),
             #[cfg(feature = "ble")]
             ble: ble::Ble::default(),
@@ -270,6 +272,36 @@ impl Pulse {
         let ui = self.0.ui.as_ref()?;
         let port = self.0.server_status.lock().port;
         Some(format!("http://127.0.0.1:{port}/ui/#s={}", ui.secret))
+    }
+
+    /// The page's address for a browser outside the host (the plugin's dock
+    /// without a browser of its own): `http://127.0.0.1:<port>/ui/#t=<ticket>`.
+    /// The ticket stands in for the secret, which would otherwise end up in
+    /// the browser's command line and history: the page trades it once at
+    /// `POST /ui/ticket`, within [`PulseOptions::ui_ticket_ttl`].
+    pub fn ui_ticket_url(&self) -> Option<String> {
+        let ui = self.0.ui.as_ref()?;
+        let ticket = hub::random_hex();
+        let now = Instant::now();
+        {
+            let mut tickets = ui.tickets.lock();
+            tickets.retain(|(_, expires)| *expires > now);
+            if tickets.len() >= hub::MAX_UI_TICKETS {
+                tickets.remove(0);
+            }
+            tickets.push((ticket.clone(), now + ui.ticket_ttl));
+        }
+        let port = self.0.server_status.lock().port;
+        Some(format!("http://127.0.0.1:{port}/ui/#t={ticket}"))
+    }
+
+    /// Whether a settings change restarts the server (LAN access, the port,
+    /// or a server that couldn't start).
+    pub(crate) fn settings_need_restart(&self, new: &Settings) -> bool {
+        let old = *self.0.settings.lock();
+        old.lan_enabled != new.lan_enabled
+            || (self.0.port_override.is_none() && old.port != new.port)
+            || self.0.server_status.lock().error.is_some()
     }
 
     // --- Pairing -----------------------------------------------------------
@@ -503,11 +535,9 @@ impl Pulse {
     /// the error says why.
     pub async fn set_settings(&self, new: Settings) -> Result<Settings, Error> {
         check_settings(&new).map_err(Error::Invalid)?;
+        // Also retries a server that couldn't start (port was taken).
+        let rebind = self.settings_need_restart(&new);
         let old = std::mem::replace(&mut *self.0.settings.lock(), new);
-        let rebind = old.lan_enabled != new.lan_enabled
-            || (self.0.port_override.is_none() && old.port != new.port)
-            // Retry a server that couldn't start (port was taken).
-            || self.0.server_status.lock().error.is_some();
         if rebind {
             self.restart_server().await;
             let failed = self.0.server_status.lock().error.clone();

@@ -170,7 +170,7 @@ Aus, solange der Host `PulseOptions::ui = Some(UiOptions { dir, host })` nicht s
 - `GET /ui/` und `/ui/*`: statische Dateien aus `dir` (der Vite-Build mit relativer `base`), ohne Geheimnis, kein Pfad außerhalb von `dir`.
 - `POST /ui/rpc/<command>`: JSON-Argumente → JSON-Ergebnis, Fehler 4xx `{ "error": "…" }`.
 - `GET /ui/events`: WebSocket mit `{ "event", "payload" }`, zuerst `pulse://state`.
-- Geheimnis pro Start (32 Byte hex): Header `X-UwUPulse-UI` bzw. `?s=` beim WebSocket, Origin fehlt oder ist `http://127.0.0.1:<port>`/`http://localhost:<port>`. `Pulse::ui_url()` liefert `http://127.0.0.1:<port>/ui/#s=<secret>`; das Frontend erkennt daran (Pfad `/ui/`, `#s=`) das HTTP-Backend (`lib/httpBackend.ts`).
+- Geheimnis pro Start (32 Byte hex): Header `X-UwUPulse-UI` bzw. `?s=` beim WebSocket, Origin fehlt oder ist `http://127.0.0.1:<port>`/`http://localhost:<port>`. `Pulse::ui_url()` liefert `http://127.0.0.1:<port>/ui/#s=<secret>`; das Frontend erkennt daran (Pfad `/ui/`, `#s=`) das HTTP-Backend (`lib/httpBackend.ts`). Für den Systembrowser liefert `Pulse::ui_ticket_url()` stattdessen `…/ui/#t=<ticket>`: ein Einmal-Ticket (32 Byte hex, 30 s gültig, höchstens 4 offen), das die Seite per `POST /ui/ticket` (`{"ticket"}` → `{"secret"}`, gleiche Loopback-/Origin-Regeln) gegen das Geheimnis tauscht und dann in `sessionStorage` hält; so landet das Geheimnis weder in der Kommandozeile des Browsers noch in seinem Verlauf. CSP der Seite nur für den eigenen Port. `set_settings` mit Neustart des Servers wird über `/ui/rpc` zuerst beantwortet und dann in einem eigenen Task angewendet.
 - Mehrere Hubs pro Rechner sind erlaubt: eigenes Datenverzeichnis, eigener Port (`PulseOptions::default_port`), eigener Gerätename für Bonjour.
 
 ### OBS-Plugin (`plugins/obs`, `crates/uwupulse-obs`)
@@ -178,7 +178,7 @@ Aus, solange der Host `PulseOptions::ui = Some(UiOptions { dir, host })` nicht s
 Ein eigener Desktop in OBS Studio (ab 31): eigener Schlüssel, eigene Kopplungen und Widgets im Plugin-Konfigordner (`obs_module_config_path`), Port 8747 (App: 8746), Bonjour-Name „UwUPulse OBS (<Rechner>)“. Läuft neben der App, das iPhone koppelt beide getrennt.
 
 - `crates/uwupulse-obs`: Staticlib mit C-ABI (`include/uwupulse_obs.h`) um `Pulse` mit `/ui`; der C++-Teil liefert Log, Link öffnen (`QDesktopServices`), Datei speichern (`QFileDialog`) und „geändert“ zurück.
-- Dock „UwUPulse“: die React-UI über obs-browser (QCef) unter `ui_url()`; ohne obs-browser (z. B. Wayland) ein Knopf, der sie im Systembrowser öffnet.
+- Dock „UwUPulse“: die React-UI über obs-browser (QCef) unter `ui_url()`; ohne obs-browser (z. B. Wayland) ein Knopf, der sie im Systembrowser öffnet (mit `uwupulse_obs_ui_ticket_url`, nie mit dem Geheimnis).
 - Quelle `uwupulse_overlay`: Widget-Auswahl, Breite/Höhe, intern eine private `browser_source` auf die Overlay-URL.
 - BLE nur unter Windows und Linux: OBS.app hat keine `NSBluetoothAlwaysUsageDescription`.
 - Build: `pnpm build:obs` (`plugins/obs/scripts/build.mjs`), CI `obs-plugin.yml` (auf main von `installers.yml` aufgerufen, bei PRs allein) → Artefakte `uwupulse-obs-{windows-x64,windows-arm64,macos-universal,linux-x64}`. Details und Installationspfade: `plugins/obs/README.md`.

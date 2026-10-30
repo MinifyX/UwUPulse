@@ -65,6 +65,10 @@ void uwupulse_obs_stop(uwupulse_obs *h);
 /* "http://127.0.0.1:<port>/ui/#s=<secret>". Free with
  * uwupulse_obs_free_string. */
 char *uwupulse_obs_ui_url(const uwupulse_obs *h);
+/* "http://127.0.0.1:<port>/ui/#t=<ticket>" for the system browser: a
+ * one-time ticket (30 s) instead of the secret. Free with
+ * uwupulse_obs_free_string. */
+char *uwupulse_obs_ui_ticket_url(const uwupulse_obs *h);
 /* {"port": 8747, "error": null, "widgets": [{"id", "name", "url"}]}; url is
  * the overlay with the token. Free with uwupulse_obs_free_string. */
 char *uwupulse_obs_widgets(const uwupulse_obs *h);
