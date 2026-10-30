@@ -55,10 +55,10 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        # Mirrored workout keeps the app running; BLE straps keep notifying in the background.
+        # BLE straps keep notifying in the background; the mirrored workout wakes the app on its own
+        # (App Store Connect rejects `workout-processing` on iOS, error 90112).
         UIBackgroundModes:
           - bluetooth-central
-          - workout-processing
         # Localized in InfoPlist.xcstrings.
         NSHealthShareUsageDescription: UwUPulse reads your heart rate during a live workout to forward it to your computer.
         NSHealthUpdateUsageDescription: UwUPulse starts a workout on your Apple Watch to measure your heart rate. Nothing is saved to Health.
