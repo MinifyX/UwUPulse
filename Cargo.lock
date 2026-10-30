@@ -5435,6 +5435,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "btleplug",
+ "chrono",
  "futures-util",
  "gethostname",
  "hyper",
@@ -5462,7 +5463,6 @@ name = "uwupulse-desktop"
 version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
- "chrono",
  "log",
  "minisign-verify 0.2.5",
  "parking_lot",

@@ -120,6 +120,8 @@ WebSocket `/api/v1/ws` (Server → Client, Text-JSON):
 
 Alle Typen camelCase (serde `rename_all = "camelCase"`).
 
+Die Commands liegen hostunabhängig im Core (`uwupulse_core::commands`: `dispatch(&Pulse, &Arc<dyn Host>, name, args)`, `UiEvents` für die Events). Der Host (Trait `Host`) liefert nur Speichern-Dialog, URL öffnen, Updates (Standard: kein Updater) und das Beenden. Die Tauri-App ist ein dünner Adapter mit denselben Namen und Argumenten.
+
 ```ts
 type Src = 'watch' | 'ble';
 interface HrSample { ts: number; bpm: number; src: Src; dev: string }
@@ -152,11 +154,24 @@ type Widget = WidgetConfig; // siehe unten; der Core prüft nur id/name (string)
 | `list_widgets` | – | `Widget[]` (beim ersten Start ein Standard-Widget „Classic“) |
 | `save_widget` / `delete_widget` | `{ widget }` / `{ id }` | `Widget` (normalisiert) / – (Fehler, wenn die ID unbekannt ist) |
 | `list_sessions` / `get_session` / `delete_session` | – / `{ id }` / `{ id }` | … |
-| `export_session` | `{ id, format: 'csv' \| 'json', path }` | – |
+| `export_session` | `{ id, format: 'csv' \| 'json' }` | Pfad oder `null` (Host zeigt den Speichern-Dialog) |
 | `get_settings` / `set_settings` | – / `{ settings }` | `Settings` |
 | `regenerate_token` | – | `ServerInfo` |
+| `get_host_info` | – | `{ kind: 'desktop' \| 'obs', updater: boolean }` |
+| `open_project_page` | `{ page }` | – |
+| `set_update_channel` / `set_auto_update` / `update_status` / `check_for_updates` / `install_update` | … | ohne Updater: `null`, `install_update` Fehler |
 
 Events: `pulse://hr` (`HrSample`), `pulse://state` (`AppState`, bei Änderung von Quellen/Server/Aufzeichnung), `pulse://pair-request` (`PairRequest`), `pulse://pair-done` (`{ requestId, ok }`), `pulse://paired` (`PairedDevice[]`), `pulse://ble` (`BleDevice[]`), `pulse://sessions` (ohne Inhalt).
+
+### `/ui`: dieselbe UI ohne Tauri (OBS-Dock)
+
+Aus, solange der Host `PulseOptions::ui = Some(UiOptions { dir, host })` nicht setzt. Dann bedient der Core-Server zusätzlich, nur über Loopback und ohne CORS:
+
+- `GET /ui/` und `/ui/*`: statische Dateien aus `dir` (der Vite-Build mit relativer `base`), ohne Geheimnis, kein Pfad außerhalb von `dir`.
+- `POST /ui/rpc/<command>`: JSON-Argumente → JSON-Ergebnis, Fehler 4xx `{ "error": "…" }`.
+- `GET /ui/events`: WebSocket mit `{ "event", "payload" }`, zuerst `pulse://state`.
+- Geheimnis pro Start (32 Byte hex): Header `X-UwUPulse-UI` bzw. `?s=` beim WebSocket, Origin fehlt oder ist `http://127.0.0.1:<port>`/`http://localhost:<port>`. `Pulse::ui_url()` liefert `http://127.0.0.1:<port>/ui/#s=<secret>`; das Frontend erkennt daran (Pfad `/ui/`, `#s=`) das HTTP-Backend (`lib/httpBackend.ts`).
+- Mehrere Hubs pro Rechner sind erlaubt: eigenes Datenverzeichnis, eigener Port (`PulseOptions::default_port`), eigener Gerätename für Bonjour.
 
 ### WidgetConfig
 ```ts

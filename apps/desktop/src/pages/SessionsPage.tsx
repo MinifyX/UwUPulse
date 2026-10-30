@@ -4,7 +4,7 @@ import {
   api,
   errorText,
   events,
-  inTauri,
+  backendKind,
   type ExportFormat,
   type SessionDetail,
   type SessionSummary,
@@ -141,7 +141,7 @@ function SessionView({
   const last = detail?.samples[detail.samples.length - 1]?.[0] ?? summary.endedAt ?? first;
 
   const exportAs = async (format: ExportFormat) => {
-    if (!inTauri) {
+    if (backendKind === 'mock') {
       toasts.show(t('Export geht nur in der App.'));
       return;
     }

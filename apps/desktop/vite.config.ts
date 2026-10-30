@@ -7,7 +7,7 @@ import pkg from './package.json' with { type: 'json' };
 /**
  * The theme, contrast and motion go onto <html> before the first paint, so a
  * dark window never flashes white (@uwusuite/design's bootScript). It reads
- * the window's preferences from localStorage (lib/prefs.ts). A file, /boot.js,
+ * the window's preferences from localStorage (lib/prefs.ts). A file, boot.js,
  * not inline, so a CSP with script-src 'self' allows it.
  */
 function boot(): Plugin {
@@ -30,6 +30,8 @@ function boot(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), boot()],
   clearScreen: false,
+  // Relative asset URLs: the same build runs in Tauri and under the core's /ui/.
+  base: './',
   // The version for the About and Updates cards (lib/prefs.ts).
   define: {
     'import.meta.env.APP_VERSION': JSON.stringify(pkg.version),

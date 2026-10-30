@@ -210,6 +210,8 @@ async function invoke<T>(command: string, args: Record<string, unknown> = {}): P
       case 'open_project_page':
         window.open(`https://github.com/MinifyX/UwUPulse#${String(args.page)}`, '_blank');
         return null;
+      case 'get_host_info':
+        return { kind: 'desktop', updater: true };
       case 'set_update_channel':
       case 'set_auto_update':
       case 'update_status':

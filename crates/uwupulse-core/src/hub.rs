@@ -79,6 +79,14 @@ pub(crate) struct PairingState {
     pub sas: Option<SasSlot>,
 }
 
+/// The `/ui` transport of this run.
+pub(crate) struct UiState {
+    pub dir: std::path::PathBuf,
+    pub host: Arc<dyn crate::commands::Host>,
+    /// Required on `/ui/rpc` and `/ui/events`; new with every start.
+    pub secret: String,
+}
+
 pub(crate) struct Inner {
     pub rt: Handle,
     pub store: Store,
@@ -112,6 +120,8 @@ pub(crate) struct Inner {
     pub bonjour: bool,
     pub advert: Mutex<Option<crate::mdns::Advert>>,
     pub ticker: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    /// `/ui/`: only when the host asked for it.
+    pub ui: Option<UiState>,
     #[cfg(feature = "ble")]
     pub ble: crate::ble::Ble,
 }

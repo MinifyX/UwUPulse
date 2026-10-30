@@ -30,8 +30,6 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 uwupulse-core = { workspace = true, features = ["ble"] }
 
-# The export's suggested file name, in local time.
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
 log.workspace = true
 parking_lot.workspace = true
 serde.workspace = true

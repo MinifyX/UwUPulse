@@ -3,6 +3,7 @@
 
 mod api;
 mod link;
+mod ui;
 
 use std::time::Duration;
 
@@ -236,13 +237,28 @@ impl HttpResponse {
 /// A bare HTTP/1.1 request; enough for our handlers, which all send a
 /// `Content-Length`.
 pub async fn http(port: u16, method: &str, path: &str, headers: &[(&str, &str)]) -> HttpResponse {
+    http_body(port, method, path, headers, b"").await
+}
+
+/// Like [`http`], with a request body.
+pub async fn http_body(
+    port: u16,
+    method: &str,
+    path: &str,
+    headers: &[(&str, &str)],
+    body: &[u8],
+) -> HttpResponse {
     let mut tcp = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
     let mut req = format!("{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n");
     for (k, v) in headers {
         req.push_str(&format!("{k}: {v}\r\n"));
     }
+    if !body.is_empty() {
+        req.push_str(&format!("Content-Length: {}\r\n", body.len()));
+    }
     req.push_str("\r\n");
     tcp.write_all(req.as_bytes()).await.unwrap();
+    tcp.write_all(body).await.unwrap();
     let mut raw = Vec::new();
     tokio::time::timeout(WAIT, tcp.read_to_end(&mut raw))
         .await

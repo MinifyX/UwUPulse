@@ -10,7 +10,7 @@ import {
 } from '@uwusuite/design';
 import { useTauriWindow } from '@uwusuite/design/tauri';
 import type { MouseEvent, ReactNode } from 'react';
-import { inTauri } from '../api';
+import { backendKind, inTauri } from '../api';
 import { t, useLanguage } from '../lib/i18n';
 
 export const platform = detectPlatform();
@@ -43,10 +43,11 @@ function leaveDoubleClickToTauri(event: MouseEvent) {
  *
  * macOS draws the window's title bar itself (tauri.macos.conf.json), with the
  * traffic lights, and the gear lives in the menu bar (lib/macMenu.ts), so
- * there is nothing to draw there.
+ * there is nothing to draw there. Served at `/ui/` (an OBS dock) the host
+ * frames the page, so there is nothing to draw either.
  */
 export function TitleBar(props: Props) {
-  if (platform === 'mac') return null;
+  if (platform === 'mac' || backendKind === 'http') return null;
   return inTauri ? <TauriTitleBar {...props} /> : <Bar {...props} controls={BROWSER_CONTROLS} />;
 }
 

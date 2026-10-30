@@ -1,9 +1,11 @@
 //! The one HTTP server: `/link` for phones, `/overlay/*` for OBS,
-//! `/api/v1/*` for everything else. Started at boot and again whenever the
-//! port or LAN access changes.
+//! `/api/v1/*` for everything else, and `/ui/*` when the host serves the
+//! app's page from here. Started at boot and again whenever the port or LAN
+//! access changes.
 
 mod api;
 mod link;
+mod ui;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -47,12 +49,16 @@ fn router(inner: Arc<Inner>) -> Router {
         .route("/api/v1/sessions/{id}", get(api::session))
         .route("/api/v1/sessions/{id}/export", get(api::export))
         .route_layer(middleware::from_fn_with_state(inner.clone(), api::auth));
-    Router::new()
+    let mut app = Router::new()
         .route("/link", get(link::handler))
         .route("/overlay/assets/{file}", get(api::asset))
         .merge(protected)
-        .layer(middleware::from_fn(api::cors))
-        .with_state(inner)
+        .layer(middleware::from_fn(api::cors));
+    // After the CORS layer: `/ui` is for its own page only.
+    if inner.ui.is_some() {
+        app = app.merge(ui::router(inner.clone()));
+    }
+    app.with_state(inner)
 }
 
 /// Open connections at most, WebSockets included.

@@ -22,7 +22,7 @@ import {
   type ThemeSetting,
 } from '@uwusuite/design';
 import { useEffect, useState, type KeyboardEvent } from 'react';
-import { api, errorText, type Settings, type UpdateInfo } from '../api';
+import { api, errorText, type HostInfo, type Settings, type UpdateInfo } from '../api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Page } from '../components/Page';
 import { copy } from '../lib/clipboard';
@@ -52,13 +52,22 @@ type UpdateProps = {
 
 export function SettingsPage(props: UpdateProps) {
   useLanguage();
+  // A host without its own updater (the OBS plugin) has no Updates card.
+  const [host, setHost] = useState<HostInfo | null>(null);
+  useEffect(() => {
+    void api
+      .getHostInfo()
+      .then(setHost)
+      .catch(() => undefined);
+  }, []);
+  const updates = !host || host.kind === 'desktop' || host.updater;
   return (
     <Page title={t('Einstellungen')}>
       <ServerCard />
       <RecordingCard />
       <AppearanceCard />
       <ApiCard />
-      <UpdatesCard {...props} />
+      {updates && <UpdatesCard {...props} />}
       <AboutCard />
     </Page>
   );

@@ -7,6 +7,7 @@
 //! handle to that runtime, so its sync methods also work from threads
 //! without one (Tauri's sync commands).
 
+pub mod commands;
 mod config;
 mod hub;
 mod mdns;
@@ -31,6 +32,7 @@ use serde_json::Value;
 use tokio::sync::{broadcast, watch, Semaphore};
 use uwupulse_proto::{b64_encode, limits, random_bytes, DeskMsg, PairingUri, WatchAction};
 
+pub use crate::commands::{Host, HostInfo, HostKind};
 pub use crate::types::*;
 pub use crate::widgets::default_widget;
 pub use uwupulse_proto as proto;
@@ -61,6 +63,10 @@ pub enum Error {
 }
 
 /// Where the hub keeps its files and how it runs.
+///
+/// Several hubs may run on one machine (the desktop app and the OBS plugin):
+/// each needs its own `config_dir` and `data_dir` (so its own identity key),
+/// its own port and, for Bonjour, a `device_name` of its own.
 #[derive(Debug, Clone)]
 pub struct PulseOptions {
     /// Keys, identity, settings, paired phones, widgets.
@@ -69,6 +75,9 @@ pub struct PulseOptions {
     pub data_dir: PathBuf,
     /// Overrides the port from the settings; tests pass `Some(0)`.
     pub port_override: Option<u16>,
+    /// The port of a fresh install, until the settings say otherwise
+    /// (8746 by default; a second hub on the machine picks another).
+    pub default_port: u16,
     /// Announce the desktop over Bonjour (only while LAN access is on).
     pub bonjour: bool,
     /// The name phones see; the host name when `None`.
@@ -78,6 +87,29 @@ pub struct PulseOptions {
     /// How long a connection may take to send its request headers (also the
     /// idle limit between keep-alive requests). Tests shorten it.
     pub header_timeout: Duration,
+    /// Serves the app's page at `/ui/` with its commands and events over
+    /// HTTP (`/ui/rpc`, `/ui/events`), for a host without a webview of its
+    /// own. Off (`None`) in the desktop app.
+    pub ui: Option<UiOptions>,
+}
+
+/// The `/ui` transport (see [`PulseOptions::ui`]).
+#[derive(Clone)]
+pub struct UiOptions {
+    /// The built desktop frontend (`apps/desktop/dist`): `index.html`,
+    /// `boot.js`, `assets/…`.
+    pub dir: PathBuf,
+    /// Answers what only the embedding app can do.
+    pub host: Arc<dyn Host>,
+}
+
+impl std::fmt::Debug for UiOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UiOptions")
+            .field("dir", &self.dir)
+            .field("host", &self.host.info())
+            .finish()
+    }
 }
 
 impl PulseOptions {
@@ -86,10 +118,12 @@ impl PulseOptions {
             config_dir: config_dir.into(),
             data_dir: data_dir.into(),
             port_override: None,
+            default_port: Settings::default().port,
             bonjour: true,
             device_name: None,
             app_version: env!("CARGO_PKG_VERSION").to_owned(),
             header_timeout: Duration::from_secs(10),
+            ui: None,
         }
     }
 }
@@ -118,7 +152,10 @@ impl Pulse {
         let settings = store
             .read::<Settings>("settings.json")
             .filter(|s| check_settings(s).is_ok())
-            .unwrap_or_default();
+            .unwrap_or(Settings {
+                port: opts.default_port,
+                ..Settings::default()
+            });
         let paired: Vec<PairedRecord> = store.read("paired.json").unwrap_or_default();
         let widgets: Vec<Value> = match store.read::<Vec<Value>>("widgets.json") {
             Some(w) => w,
@@ -177,6 +214,15 @@ impl Pulse {
             bonjour: opts.bonjour,
             advert: Mutex::new(None),
             ticker: Mutex::new(None),
+            ui: opts.ui.map(|ui| hub::UiState {
+                dir: ui.dir,
+                host: ui.host,
+                // Hex: it goes into a URL fragment and a query unescaped.
+                secret: random_bytes::<32>()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect(),
+            }),
             #[cfg(feature = "ble")]
             ble: ble::Ble::default(),
         });
@@ -207,6 +253,17 @@ impl Pulse {
 
     pub fn device_name(&self) -> &str {
         &self.0.desk_name
+    }
+
+    /// The page's address when [`PulseOptions::ui`] is set:
+    /// `http://127.0.0.1:<port>/ui/#s=<secret>`. The secret is new with
+    /// every start and sits in the fragment, so it never reaches a server
+    /// log or a `Referer`. The port can change with the settings: ask again
+    /// after a `pulse://state` with a different `server.port`.
+    pub fn ui_url(&self) -> Option<String> {
+        let ui = self.0.ui.as_ref()?;
+        let port = self.0.server_status.lock().port;
+        Some(format!("http://127.0.0.1:{port}/ui/#s={}", ui.secret))
     }
 
     // --- Pairing -----------------------------------------------------------

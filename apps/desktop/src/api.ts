@@ -3,12 +3,15 @@
  * "Desktop-App: Tauri-Commands und Events"). Command names are snake_case,
  * argument names camelCase as Tauri expects them.
  *
- * Outside Tauri (plain `pnpm dev` in a browser) the calls go to a small mock
- * (dev/mock.ts), so the UI can be worked on without the Rust side.
+ * Served by the core at `/ui/#s=<secret>` (the OBS plugin's dock) they go
+ * over HTTP and a WebSocket (lib/httpBackend.ts). Otherwise, outside Tauri
+ * (plain `pnpm dev` in a browser), they go to a small mock (dev/mock.ts), so
+ * the UI can be worked on without the Rust side.
  */
 
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { listen as tauriListen, type UnlistenFn } from '@tauri-apps/api/event';
+import { createHttpBackend, uiSecret } from './lib/httpBackend.ts';
 import type { UpdateChannel } from './lib/prefs.ts';
 import type { ProjectPage, UpdateInfo } from './lib/updates.ts';
 import type { WidgetConfig } from './lib/widget.ts';
@@ -119,8 +122,20 @@ export type Widget = WidgetConfig;
 export type WatchAction = 'start' | 'stop';
 export type ExportFormat = 'csv' | 'json';
 
+/** Who shows the page (`get_host_info`). */
+export interface HostInfo {
+  kind: 'desktop' | 'obs';
+  /** Whether the update commands do anything. */
+  updater: boolean;
+}
+
 /** True inside the Tauri webview. */
 export const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+const secret = !inTauri && typeof window !== 'undefined' ? uiSecret(window.location) : null;
+
+/** How commands and events travel: Tauri IPC, the core's `/ui` over HTTP, or the dev mock. */
+export const backendKind: 'tauri' | 'http' | 'mock' = inTauri ? 'tauri' : secret ? 'http' : 'mock';
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 type Listen = <T>(event: string, handler: (payload: T) => void) => Promise<UnlistenFn>;
@@ -130,7 +145,9 @@ let backend: { invoke: Invoke; listen: Listen } | null = inTauri
       invoke: (command, args) => tauriInvoke(command, args),
       listen: (event, handler) => tauriListen(event, (e) => handler(e.payload as never)),
     }
-  : null;
+  : secret
+    ? createHttpBackend({ origin: window.location.origin, secret })
+    : null;
 
 async function getBackend() {
   if (!backend) {
@@ -164,6 +181,7 @@ function on<T>(event: string, handler: (payload: T) => void): () => void {
 
 export const api = {
   getState: () => call<AppState>('get_state'),
+  getHostInfo: () => call<HostInfo>('get_host_info'),
 
   listPaired: () => call<PairedDevice[]>('list_paired'),
   removePaired: (id: string) => call<void>('remove_paired', { id }),
