@@ -8,7 +8,8 @@
 # Linux takes libobs, obs-frontend-api and Qt from the system packages
 # (obs-studio from the OBS PPA, qt6-base-dev), so it only fetches the header.
 #
-# Writes <DEPS_DIR>/prefix-path.txt: the CMAKE_PREFIX_PATH for the plugin.
+# Writes <DEPS_DIR>/prefix-path.txt (the CMAKE_PREFIX_PATH for the plugin)
+# and qt-host-path.txt (QT_HOST_PATH, only for Windows ARM64).
 # A second run with the same buildspec does nothing.
 
 cmake_minimum_required(VERSION 3.28)
@@ -73,26 +74,39 @@ file(COPY_FILE "${DEPS_DIR}/downloads/browser-panel.hpp" "${DEPS_DIR}/obs-browse
 
 if(PLATFORM STREQUAL "linux")
   file(WRITE "${DEPS_DIR}/prefix-path.txt" "")
+  file(WRITE "${DEPS_DIR}/qt-host-path.txt" "")
   file(WRITE "${stamp}" "${spec_hash}")
   return()
 endif()
 
-foreach(dep prebuilt qt6)
+# fetch(<dep> <files key> <dir>): one obs-deps archive, extracted into <dir>
+# unless that holds it already.
+function(fetch dep key dir)
   string(JSON base GET "${spec}" ${dep} baseUrl)
-  string(JSON name GET "${spec}" ${dep} files ${PLATFORM} name)
-  string(JSON sha GET "${spec}" ${dep} files ${PLATFORM} sha256)
+  string(JSON name GET "${spec}" ${dep} files ${key} name)
+  string(JSON sha GET "${spec}" ${dep} files ${key} sha256)
   set(have "")
-  if(EXISTS "${DEPS_DIR}/${dep}/.sha256")
-    file(READ "${DEPS_DIR}/${dep}/.sha256" have)
+  if(EXISTS "${dir}/.sha256")
+    file(READ "${dir}/.sha256" have)
   endif()
   if(NOT have STREQUAL sha)
     download("${base}/${name}" ${name} ${sha})
     message(STATUS "Extracting ${name}")
-    extract(${name} "${DEPS_DIR}/${dep}")
+    extract(${name} "${dir}")
     file(REMOVE "${DEPS_DIR}/downloads/${name}")
-    file(WRITE "${DEPS_DIR}/${dep}/.sha256" "${sha}")
+    file(WRITE "${dir}/.sha256" "${sha}")
   endif()
-endforeach()
+endfunction()
+
+fetch(prebuilt ${PLATFORM} "${DEPS_DIR}/prebuilt")
+fetch(qt6 ${PLATFORM} "${DEPS_DIR}/qt6")
+# Qt for ARM64 is cross-compiled: CMake wants the x64 Qt as QT_HOST_PATH
+# (its tools run emulated on Windows on ARM).
+set(qt_host "")
+if(PLATFORM STREQUAL "windows-arm64")
+  fetch(qt6 windows-x64 "${DEPS_DIR}/qt6-host")
+  set(qt_host "${DEPS_DIR}/qt6-host")
+endif()
 
 string(JSON obs_version GET "${spec}" obs-studio version)
 string(JSON url GET "${spec}" obs-studio url)
@@ -160,5 +174,6 @@ file(REMOVE "${DEPS_DIR}/downloads/obs-studio-${obs_version}.tar.gz")
 # On macOS libobs is a framework: its package config sits in it.
 set(found_path "${DEPS_DIR}/prefix;${DEPS_DIR}/prefix/Frameworks;${DEPS_DIR}/qt6")
 file(WRITE "${DEPS_DIR}/prefix-path.txt" "${found_path}")
+file(WRITE "${DEPS_DIR}/qt-host-path.txt" "${qt_host}")
 file(WRITE "${stamp}" "${spec_hash}")
 message(STATUS "OBS dependencies ready in ${DEPS_DIR}")

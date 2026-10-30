@@ -53,7 +53,7 @@ Linux (Ubuntu 24.04, as in CI):
 
 ```sh
 sudo add-apt-repository ppa:obsproject/obs-studio
-sudo apt install obs-studio qt6-base-dev qt6-base-private-dev libdbus-1-dev pkg-config
+sudo apt install obs-studio libsimde-dev qt6-base-dev qt6-base-private-dev libdbus-1-dev pkg-config
 ```
 
 CI (`.github/workflows/obs-plugin.yml`) builds every platform on each push and pull request. Each run uploads these unsigned artifacts:

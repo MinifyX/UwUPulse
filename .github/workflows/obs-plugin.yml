@@ -102,8 +102,8 @@ jobs:
           sudo add-apt-repository --yes ppa:obsproject/obs-studio
           sudo apt-get update
           # libdbus-1-dev: BlueZ, for chest straps at this computer.
-          sudo apt-get install -y --no-install-recommends obs-studio qt6-base-dev \
-            qt6-base-private-dev libdbus-1-dev pkg-config
+          sudo apt-get install -y --no-install-recommends obs-studio libsimde-dev \
+            qt6-base-dev qt6-base-private-dev libdbus-1-dev pkg-config
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:

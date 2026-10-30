@@ -85,6 +85,8 @@ run(cmake, [
   join(plugin, 'cmake', 'deps.cmake'),
 ]);
 const prefixPath = readFileSync(join(deps, 'prefix-path.txt'), 'utf8').trim();
+const qtHostFile = join(deps, 'qt-host-path.txt');
+const qtHostPath = existsSync(qtHostFile) ? readFileSync(qtHostFile, 'utf8').trim() : '';
 
 // 2. Frontend
 const ui = join(root, 'apps', 'desktop', 'dist');
@@ -190,6 +192,7 @@ const configure = [
   `-DUWUPULSE_CORE_LINK=${link.join(';')}`,
   `-DUWUPULSE_UI_DIR=${ui}`,
 ];
+if (qtHostPath) configure.push(`-DQT_HOST_PATH=${qtHostPath}`);
 if (platform === 'macos') {
   configure.push(
     '-G',
