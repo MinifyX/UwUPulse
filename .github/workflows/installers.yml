@@ -255,13 +255,17 @@ jobs:
         shell: bash
         run: |
           set -e
-          test "$(tar -tzf target/installers/UwUPulse-obs-linux-x64.tar.gz | cut -d/ -f1 | sort -u)" = uwupulse
-          tar -tzf target/installers/UwUPulse-obs-linux-x64.tar.gz | grep -qx uwupulse/bin/64bit/uwupulse.so
+          # Listings first: grep -q stops reading early, and pipefail would
+          # count the writer's broken pipe as a failure.
+          files=$(tar -tzf target/installers/UwUPulse-obs-linux-x64.tar.gz)
+          test "$(cut -d/ -f1 <<<"$files" | sort -u)" = uwupulse
+          grep -qx uwupulse/bin/64bit/uwupulse.so <<<"$files"
           deb=target/installers/UwUPulse-obs-linux-x64.deb
           test "$(dpkg-deb -f "$deb" Package)" = uwupulse-obs
-          dpkg-deb -f "$deb" Depends | grep -q 'obs-studio (>= 31)'
-          dpkg-deb -c "$deb" | grep -q ' ./usr/lib/x86_64-linux-gnu/obs-plugins/uwupulse.so$'
-          dpkg-deb -c "$deb" | grep -q ' ./usr/share/obs/obs-plugins/uwupulse/locale/en-US.ini$'
+          grep -q 'obs-studio (>= 31)' <<<"$(dpkg-deb -f "$deb" Depends)"
+          contents=$(dpkg-deb -c "$deb")
+          grep -q ' ./usr/lib/x86_64-linux-gnu/obs-plugins/uwupulse.so$' <<<"$contents"
+          grep -q ' ./usr/share/obs/obs-plugins/uwupulse/locale/en-US.ini$' <<<"$contents"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
