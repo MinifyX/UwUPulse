@@ -21,7 +21,7 @@ use uwupulse_core::proto::{
 use uwupulse_core::{Event, Pulse, PulseOptions};
 
 /// Upper bound for anything we wait on; a hang fails instead of blocking CI.
-const WAIT: Duration = Duration::from_secs(5);
+pub const WAIT: Duration = Duration::from_secs(5);
 
 pub struct Env {
     pub pulse: Pulse,
@@ -31,6 +31,11 @@ pub struct Env {
 }
 
 pub async fn start() -> Env {
+    start_with(|_| {}).await
+}
+
+/// Like [`start`], with options adjusted by `f`.
+pub async fn start_with(f: impl FnOnce(&mut PulseOptions)) -> Env {
     let dir = tempfile::tempdir().unwrap();
     let config = dir.path().join("config");
     std::fs::create_dir_all(&config).unwrap();
@@ -40,6 +45,7 @@ pub async fn start() -> Env {
     opts.port_override = Some(0);
     opts.bonjour = false;
     opts.device_name = Some("Test Desk".into());
+    f(&mut opts);
     let pulse = Pulse::start(opts).await.unwrap();
     let info = pulse.server_info();
     assert!(info.error.is_none(), "{:?}", info.error);

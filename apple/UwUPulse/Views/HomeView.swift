@@ -9,64 +9,77 @@ struct HomeView: View {
             Section {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let bpm = model.currentBPM(at: context.date)
-                    VStack(spacing: 8) {
-                        PulsingHeart(bpm: bpm)
-                            .frame(height: 140)
+                    VStack(spacing: 4) {
+                        PulsingHeart(bpm: bpm, size: 96)
+                            .frame(height: 120)
                         Text(bpm.map(String.init) ?? "--")
-                            .font(.system(size: 72, weight: .bold, design: .rounded))
-                            .monospacedDigit()
+                            .font(UwUFont.fixed(84, weight: .heavy))
+                            .foregroundStyle(Palette.ink)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: bpm)
                         Text("BPM")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                            .font(UwUFont.style(.headline, weight: .bold))
+                            .foregroundStyle(Palette.muted)
                         if bpm != nil, let source = model.source {
                             Label(
                                 source == .watch ? String(localized: "From Apple Watch") : String(localized: "From chest strap"),
                                 systemImage: source == .watch ? "applewatch" : "dot.radiowaves.left.and.right"
                             )
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .font(UwUFont.style(.footnote, weight: .medium))
+                            .foregroundStyle(Palette.muted)
+                            .padding(.top, 4)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical)
+                    .padding(.vertical, 8)
                 }
             }
             .listRowBackground(Color.clear)
 
-            Section("Apple Watch") {
+            Section {
                 watchRow
+                if let error = model.workout.lastError {
+                    Text(error)
+                        .font(UwUFont.style(.footnote))
+                        .foregroundStyle(Palette.danger)
+                }
+            } header: {
+                SectionHeader("Apple Watch")
+            } footer: {
                 Button(action: model.toggleWorkout) {
                     Label(workoutButtonTitle, systemImage: isWorkoutActive ? "stop.fill" : "play.fill")
+                        .font(UwUFont.style(.body, weight: .semibold))
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(isWorkoutActive ? .gray : .accentColor)
+                .primaryButton()
+                .controlSize(.large)
+                .tint(isWorkoutActive ? Palette.danger : Palette.pinkSolid)
                 .disabled(!canToggleWorkout)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-                if let error = model.workout.lastError {
-                    Text(error).font(.footnote).foregroundStyle(.red)
-                }
+                .padding(.top, 12)
             }
 
-            Section("Desktops") {
+            Section {
                 if model.links.desktops.isEmpty {
-                    Button("Pair a desktop") { model.selectedTab = .desktops }
+                    Button("Pair a desktop", systemImage: "plus.circle.fill") { model.selectedTab = .desktops }
+                        .foregroundStyle(Palette.pinkSolid)
                 } else {
                     ForEach(model.links.desktops) { desktop in
                         DesktopStatusRow(name: desktop.name, connection: model.links.connections[desktop.id])
                     }
                 }
+            } header: {
+                SectionHeader("Desktops")
             }
 
             if model.straps.savedStrapID != nil {
-                Section("Chest strap") {
+                Section {
                     StrapStatusRow()
+                } header: {
+                    SectionHeader("Chest strap")
                 }
             }
         }
+        .suiteList()
         .navigationTitle("UwUPulse")
     }
 
@@ -90,18 +103,40 @@ struct HomeView: View {
     @ViewBuilder private var watchRow: some View {
         let workout = model.workout
         if !workout.healthAvailable {
-            Label("Health data is not available on this device.", systemImage: "exclamationmark.triangle")
+            StatusRow("Health data is not available on this device.", symbol: "exclamationmark.triangle.fill", color: Palette.warning)
         } else if !workout.watchPaired {
-            Label("No Apple Watch paired", systemImage: "applewatch.slash")
+            StatusRow("No Apple Watch paired", symbol: "applewatch.slash", color: Palette.faint)
         } else if !workout.watchAppInstalled {
-            Label("Install UwUPulse on your Apple Watch.", systemImage: "applewatch")
+            StatusRow("Install UwUPulse on your Apple Watch.", symbol: "applewatch", color: Palette.warning)
         } else {
             switch workout.phase {
-            case .running: Label("Workout running", systemImage: "applewatch.radiowaves.left.and.right")
-            case .starting: Label("Starting on the watch…", systemImage: "applewatch")
-            case .stopping: Label("Stopping…", systemImage: "applewatch")
-            case .idle: Label("Ready", systemImage: "applewatch")
+            case .running: StatusRow("Workout running", symbol: "applewatch.radiowaves.left.and.right", color: Palette.success)
+            case .starting: StatusRow("Starting on the watch…", symbol: "applewatch", color: Palette.warning)
+            case .stopping: StatusRow("Stopping…", symbol: "applewatch", color: Palette.warning)
+            case .idle: StatusRow("Ready", symbol: "applewatch", color: Palette.faint)
             }
+        }
+    }
+}
+
+/// A row with a tinted badge and one line of status text.
+struct StatusRow: View {
+    let title: LocalizedStringKey
+    let symbol: String
+    let color: Color
+
+    init(_ title: LocalizedStringKey, symbol: String, color: Color) {
+        self.title = title
+        self.symbol = symbol
+        self.color = color
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            SymbolBadge(symbol: symbol, color: color)
+            Text(title)
+                .font(UwUFont.style(.body))
+                .foregroundStyle(Palette.ink)
         }
     }
 }
@@ -111,20 +146,18 @@ struct DesktopStatusRow: View {
     var connection: DesktopConnection?
 
     var body: some View {
-        HStack {
-            Image(systemName: "desktopcomputer")
-                .foregroundStyle(Color.accentColor)
-            VStack(alignment: .leading) {
+        HStack(spacing: 12) {
+            SymbolBadge(symbol: "desktopcomputer", color: Palette.pink)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(name)
+                    .font(UwUFont.style(.body, weight: .medium))
+                    .foregroundStyle(Palette.ink)
                 Text(statusText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(UwUFont.style(.footnote))
+                    .foregroundStyle(Palette.muted)
             }
             Spacer()
-            Circle()
-                .fill(statusColor)
-                .frame(width: 10, height: 10)
-                .accessibilityHidden(true)
+            StatusDot(color: statusColor)
         }
     }
 
@@ -135,10 +168,10 @@ struct DesktopStatusRow: View {
 
     private var statusColor: Color {
         switch connection?.phase {
-        case .ready: .green
-        case .connecting, .handshaking, .confirming: .orange
-        case .failed: .red
-        default: .gray
+        case .ready: Palette.success
+        case .connecting, .handshaking, .confirming: Palette.warning
+        case .failed: Palette.danger
+        default: Palette.faint
         }
     }
 }

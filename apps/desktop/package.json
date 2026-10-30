@@ -1,6 +1,6 @@
 {
   "name": "@uwupulse/desktop",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -10,13 +10,12 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node --test 'test/*.test.ts'",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "icons": "uwu-icons --brand ../../brand --name uwupulse"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.0.0",
-    "@tauri-apps/plugin-dialog": "^2.0.0",
-    "@tauri-apps/plugin-opener": "^2.0.0",
     "@uwusuite/design": "https://github.com/MinifyX/UwUSuite-Design/releases/download/v1.8.1/uwusuite-design-1.8.1.tgz",
     "lucide-react": "^1.52.0",
     "react": "^18.3.1",

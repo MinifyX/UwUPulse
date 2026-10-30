@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { bootScript } from '@uwusuite/design';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
+import pkg from './package.json' with { type: 'json' };
 
 /**
  * The theme, contrast and motion go onto <html> before the first paint, so a
@@ -29,6 +30,10 @@ function boot(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), boot()],
   clearScreen: false,
+  // The version for the About and Updates cards (lib/prefs.ts).
+  define: {
+    'import.meta.env.APP_VERSION': JSON.stringify(pkg.version),
+  },
   server: {
     port: 1420,
     strictPort: true,

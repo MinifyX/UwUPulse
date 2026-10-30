@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 1.0.0
 
 First release.
 
@@ -10,3 +10,6 @@ First release.
 - OBS overlays with five presets, a live editor, colour zones and custom CSS.
 - Session recording (SQLite) with graphs and CSV/JSON export.
 - Local REST and WebSocket API with token.
+- UwUSuite design on desktop, iPhone and Apple Watch: UwU Sans, suite colours, Nyu, new app icon.
+- Desktop appearance settings (font, contrast, motion, text size), macOS menu and close-to-hide.
+- UwUPulse Setup for Windows, macOS and Linux with signed in-app updates; .deb, .rpm, portable and AUR packages.

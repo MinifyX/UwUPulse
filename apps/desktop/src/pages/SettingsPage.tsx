@@ -1,31 +1,56 @@
 import {
   Button,
   Card,
+  FONT_CHOICES,
+  FONT_NAMES,
+  FONT_STACKS,
   Hint,
   IconButton,
   ICONS,
+  Nyu,
   Segmented,
   SettingRow,
   Switch,
+  TEXT_SIZE_CHOICES,
+  TEXT_SIZE_LABELS,
   TextInput,
+  Wordmark,
+  type ContrastSetting,
+  type FontChoice,
+  type MotionSetting,
+  type TextSizeChoice,
   type ThemeSetting,
 } from '@uwusuite/design';
-import { useEffect, useState } from 'react';
-import { api, errorText, type Settings } from '../api';
+import { useEffect, useState, type KeyboardEvent } from 'react';
+import { api, errorText, type Settings, type UpdateInfo } from '../api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Page } from '../components/Page';
 import { copy } from '../lib/clipboard';
 import { N_, t, useLanguage } from '../lib/i18n';
-import { setPrefs, usePrefs, type LanguageSetting } from '../lib/prefs';
+import {
+  APP_VERSION,
+  setPrefs,
+  usePrefs,
+  type LanguageSetting,
+  type UpdateChannel,
+} from '../lib/prefs';
 import { patchState, usePulse } from '../lib/pulse';
 import { toasts } from '../lib/toasts';
+import { notesFor } from '../lib/updates';
 
 const PORT_MIN = 1024;
 const PORT_MAX = 65535;
 const IDLE_MIN = 10;
 const IDLE_MAX = 3600;
 
-export function SettingsPage() {
+type UpdateProps = {
+  /** A downloaded update waiting for the next start, or null. */
+  update: UpdateInfo | null;
+  onUpdateFound: (update: UpdateInfo) => void;
+  onInstallUpdate: () => Promise<void>;
+};
+
+export function SettingsPage(props: UpdateProps) {
   useLanguage();
   return (
     <Page title={t('Einstellungen')}>
@@ -33,6 +58,8 @@ export function SettingsPage() {
       <RecordingCard />
       <AppearanceCard />
       <ApiCard />
+      <UpdatesCard {...props} />
+      <AboutCard />
     </Page>
   );
 }
@@ -250,6 +277,7 @@ function RecordingCard() {
 }
 
 function AppearanceCard() {
+  const lang = useLanguage();
   const prefs = usePrefs();
   return (
     <Card title={t('Darstellung')}>
@@ -277,7 +305,95 @@ function AppearanceCard() {
           ]}
         />
       </SettingRow>
+      <SettingRow label={t('Kontrast')} description={t('„System“ folgt dem Betriebssystem.')}>
+        <Segmented<ContrastSetting>
+          label={t('Kontrast')}
+          value={prefs.contrast}
+          onChange={(contrast) => setPrefs({ contrast })}
+          options={[
+            { value: 'system', label: t('System') },
+            { value: 'normal', label: t('Normal') },
+            { value: 'high', label: t('Hoch') },
+          ]}
+        />
+      </SettingRow>
+      <SettingRow label={t('Animationen')} description={t('„System“ folgt dem Betriebssystem.')}>
+        <Segmented<MotionSetting>
+          label={t('Animationen')}
+          value={prefs.motion}
+          onChange={(motion) => setPrefs({ motion })}
+          options={[
+            { value: 'system', label: t('System') },
+            { value: 'on', label: t('An') },
+            { value: 'off', label: t('Aus') },
+          ]}
+        />
+      </SettingRow>
+      <SettingRow label={t('Textgröße')} description={t('Zusätzlich zur Textgröße des Systems.')}>
+        <Segmented<TextSizeChoice>
+          label={t('Textgröße')}
+          value={prefs.textSize}
+          onChange={(textSize) => setPrefs({ textSize })}
+          options={TEXT_SIZE_CHOICES.map((value) => ({
+            value,
+            label: TEXT_SIZE_LABELS[lang][value],
+          }))}
+        />
+      </SettingRow>
+      <div className="setting-block">
+        <div className="setting-block-head">
+          <p className="setting-block-label">{t('Schrift')}</p>
+          <p className="setting-block-description">
+            {t(
+              'Die Schrift der Oberfläche, nur auf diesem Gerät. UwU Sans ist die Schrift aller UwU-Apps.',
+            )}
+          </p>
+        </div>
+        <FontPicker value={prefs.font} onChange={(font) => setPrefs({ font })} />
+      </div>
     </Card>
+  );
+}
+
+/**
+ * The package's fonts as a radio group, each in its own face. The overlays
+ * keep their own font (Overlay → Widget).
+ */
+function FontPicker({
+  value,
+  onChange,
+}: {
+  value: FontChoice;
+  onChange: (font: FontChoice) => void;
+}) {
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    const index = FONT_CHOICES.indexOf(value);
+    const next = (index + step + FONT_CHOICES.length) % FONT_CHOICES.length;
+    onChange(FONT_CHOICES[next]!);
+    event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=radio]')[next]?.focus();
+  };
+  return (
+    <div className="font-picker" role="radiogroup" aria-label={t('Schrift')} onKeyDown={onKeyDown}>
+      {FONT_CHOICES.map((choice) => (
+        <button
+          key={choice}
+          type="button"
+          role="radio"
+          aria-checked={value === choice}
+          tabIndex={value === choice ? 0 : -1}
+          onClick={() => onChange(choice)}
+          style={{ fontFamily: FONT_STACKS[choice] }}
+        >
+          <span className="font-picker-name">
+            {choice === 'system' ? t('System') : FONT_NAMES[choice]}
+          </span>
+          <span className="font-picker-sample">{t('Herzfrequenz 0123 Il1 O0')}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -318,6 +434,163 @@ function ApiCard() {
         >
           {t('Kopieren')}
         </Button>
+      </div>
+    </Card>
+  );
+}
+
+type CheckResult = { tone: 'success' | 'danger'; text: string } | null;
+
+function UpdatesCard({ update, onUpdateFound, onInstallUpdate }: UpdateProps) {
+  const lang = useLanguage();
+  const prefs = usePrefs();
+  const [checking, setChecking] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [result, setResult] = useState<CheckResult>(null);
+  const [showNotes, setShowNotes] = useState(false);
+  const notes = notesFor(update?.notes, lang);
+
+  const check = async () => {
+    setChecking(true);
+    setResult(null);
+    try {
+      const found = await api.checkForUpdates();
+      if (found) onUpdateFound(found);
+      else setResult({ tone: 'success', text: t('UwUPulse ist auf dem neuesten Stand. ✧') });
+    } catch (e) {
+      setResult({
+        tone: 'danger',
+        text: t('Suche fehlgeschlagen: {error}', { error: errorText(e) }),
+      });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const install = async () => {
+    setInstalling(true);
+    setResult(null);
+    try {
+      await onInstallUpdate();
+    } catch (e) {
+      setResult({ tone: 'danger', text: errorText(e) });
+      setInstalling(false);
+    }
+  };
+
+  return (
+    <Card title={t('Updates')}>
+      <SettingRow
+        label={t('Version {version}', { version: APP_VERSION || '–' })}
+        description={t(
+          'UwUPulse lädt neue Versionen still herunter und installiert sie beim nächsten Start. Jedes Update ist signiert und wird vor dem Start geprüft.',
+        )}
+      >
+        {update ? (
+          <Button
+            size="sm"
+            variant="primary"
+            icon={ICONS.download}
+            busy={installing}
+            onClick={() => void install()}
+          >
+            {t('{version} installieren', { version: update.version })}
+          </Button>
+        ) : (
+          <Button size="sm" icon={ICONS.refresh} busy={checking} onClick={() => void check()}>
+            {checking ? t('Sucht …') : t('Nach Updates suchen')}
+          </Button>
+        )}
+      </SettingRow>
+      {update && notes && (
+        <div className="setting-notes">
+          <button
+            type="button"
+            className="link-button"
+            aria-expanded={showNotes}
+            onClick={() => setShowNotes(!showNotes)}
+          >
+            {t('Was ist neu?')}
+          </button>
+          {showNotes && <p className="update-hint-notes">{notes}</p>}
+        </div>
+      )}
+      {result && (
+        <p className="setting-result" data-tone={result.tone} role="status">
+          {result.text}
+        </p>
+      )}
+      <SettingRow
+        label={t('Automatisch nach Updates suchen')}
+        description={t('Kurz nach dem Start und danach alle sechs Stunden.')}
+      >
+        <Switch
+          checked={prefs.autoUpdate}
+          label={t('Automatisch nach Updates suchen')}
+          onChange={(autoUpdate) => setPrefs({ autoUpdate })}
+        />
+      </SettingRow>
+      <SettingRow
+        label={t('Update-Kanal')}
+        description={
+          prefs.updateChannel === 'beta'
+            ? t('Beta bekommt neue Versionen früher. Es kann mal etwas wackeln.')
+            : t('Stabil bekommt nur fertige Versionen.')
+        }
+      >
+        <Segmented<UpdateChannel>
+          label={t('Update-Kanal')}
+          value={prefs.updateChannel}
+          onChange={(updateChannel) => setPrefs({ updateChannel })}
+          options={[
+            { value: 'stable', label: t('Stabil') },
+            { value: 'beta', label: t('Beta') },
+          ]}
+        />
+      </SettingRow>
+    </Card>
+  );
+}
+
+function AboutCard() {
+  useLanguage();
+  return (
+    <Card title={t('Über UwUPulse')}>
+      <div className="about">
+        <Nyu shell="box" size={88} mood="happy" title="Nyu" />
+        <Wordmark product="Pulse" className="mt-1.5 text-title" />
+        <p className="about-version">{t('Version {version}', { version: APP_VERSION || '–' })}</p>
+        <p className="about-text">
+          {t(
+            'Freie Software unter der MIT-Lizenz. Kein Tracking, kein Konto, deine Herzfrequenz bleibt lokal.',
+          )}
+        </p>
+        <div className="about-actions">
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={ICONS.openExternal}
+            onClick={() => void api.openProjectPage('source')}
+          >
+            {t('Quellcode auf GitHub')}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={ICONS.openExternal}
+            onClick={() => void api.openProjectPage('releases')}
+          >
+            {t('Versionen')}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={ICONS.openExternal}
+            onClick={() => void api.openProjectPage('license')}
+          >
+            {t('Lizenz')}
+          </Button>
+        </div>
       </div>
     </Card>
   );

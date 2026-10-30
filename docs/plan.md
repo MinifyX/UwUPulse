@@ -200,6 +200,8 @@ Große BPM-Anzeige, Start/Stopp, Status „gespiegelt zum iPhone“. Startbar vo
 - [x] Overlay-Seite
 - [x] iOS-/watchOS-App (Simulator-Build; HealthKit-Mirroring, BLE, Bonjour und QR auf echten Geräten noch ungetestet)
 - [x] CI, Release-Workflows, README
+- [x] Suite-Installer (`apps/setup`) und Release-Pipeline: `installers.yml` baut unsigniert, `pnpm release` signiert die Update-Dateien, veröffentlicht das Release, die Feeds (`updates`-Branch) und AUR `uwupulse-bin`
+- [ ] Erstes Release per `pnpm release` (Update-Schlüssel, Branch `updates` entsteht dabei)
 - [x] Security-Review (docs/security-review-2026-10.md)
 - [ ] Erster Test mit echter Watch, iPhone und Desktop
 - [ ] TestFlight / App-Store-Einreichung

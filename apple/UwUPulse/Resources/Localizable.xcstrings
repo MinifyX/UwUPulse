@@ -371,6 +371,26 @@
         }
       }
     },
+    "No chest strap yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein Brustgurt"
+          }
+        }
+      }
+    },
+    "No desktop paired yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein Computer gekoppelt"
+          }
+        }
+      }
+    },
     "Not connected": {
       "localizations": {
         "de": {
@@ -527,6 +547,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datenschutz"
+          }
+        }
+      }
+    },
+    "Put on your strap and wet the electrodes. It shows up below as soon as it wakes up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leg deinen Gurt an und befeuchte die Elektroden. Er erscheint unten, sobald er aufwacht."
           }
         }
       }
@@ -867,6 +897,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Herzfrequenz geht nur an Computer, die du gekoppelt hast, direkt über dein lokales Netzwerk. Keine Cloud, kein Konto, kein Tracking."
+          }
+        }
+      }
+    },
+    "Your heart rate, live on your desktop.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Puls, live auf deinem Computer."
           }
         }
       }

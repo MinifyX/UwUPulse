@@ -36,7 +36,7 @@ struct PulsingHeart: View {
     var body: some View {
         let heart = Image(systemName: bpm != nil ? "heart.fill" : "heart")
             .font(.system(size: size))
-            .foregroundStyle(Color.accentColor.gradient)
+            .foregroundStyle(Palette.pink.gradient)
             .accessibilityHidden(true)
         if let bpm {
             let period = 60.0 / Double(max(40, min(bpm, 200)))

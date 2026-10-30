@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" fill="none" stroke="currentColor" role="img" aria-label="Nyu, the UwUPulse heart cat">
+  <title>Nyu (mono)</title>
+  <!-- One colour, outlines only: the ears, the heart, the face. -->
+  <g transform="translate(128 131) scale(0.6) translate(-256 -258)" stroke-linejoin="round" stroke-linecap="round">
+    <g stroke-width="15">
+      <path d="M134 176 L130 92 Q132 72 150 82 L210 124"/>
+      <path d="M378 176 L382 92 Q380 72 362 82 L302 124"/>
+      <path d="M256 424 C176 374 88 310 88 220 C88 160 134 120 188 120 C222 120 244 136 256 158 C268 136 290 120 324 120 C378 120 424 160 424 220 C424 310 336 374 256 424 Z"/>
+    </g>
+    <g stroke-width="13">
+      <path d="M176 240 Q202 272 228 240"/>
+      <path d="M284 240 Q310 272 336 240"/>
+      <path d="M226 294 q15 22 30 0 q15 22 30 0"/>
+    </g>
+  </g>
+</svg>

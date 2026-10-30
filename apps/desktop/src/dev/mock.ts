@@ -196,6 +196,7 @@ async function invoke<T>(command: string, args: Record<string, unknown> = {}): P
         emit('pulse://sessions', null);
         return null;
       case 'export_session':
+        // The app shows the save dialog; the mock pretends it was cancelled.
         return null;
       case 'get_settings':
         return settings;
@@ -206,6 +207,17 @@ async function invoke<T>(command: string, args: Record<string, unknown> = {}): P
         state.server = { ...state.server, token: `mock-${Math.random().toString(36).slice(2)}` };
         emit('pulse://state', structuredClone(state));
         return state.server;
+      case 'open_project_page':
+        window.open(`https://github.com/MinifyX/UwUPulse#${String(args.page)}`, '_blank');
+        return null;
+      case 'set_update_channel':
+      case 'set_auto_update':
+      case 'update_status':
+        return null;
+      case 'check_for_updates':
+        return new Promise((r) => setTimeout(() => r(null), 600));
+      case 'install_update':
+        throw new Error('mock: no updates in the browser');
       default:
         throw new Error(`mock: unknown command ${command}`);
     }
@@ -226,4 +238,9 @@ export const mockBackend = {
 (window as unknown as Record<string, unknown>).uwupulseMock = {
   pairRequest: () =>
     emit('pulse://pair-request', { requestId: 'r1', deviceName: 'iPhone 17', code: '042137' }),
+  updateReady: () =>
+    emit('update:ready', {
+      version: '0.2.0',
+      notes: JSON.stringify({ de: 'Neu: Updates in der App.', en: 'New: in-app updates.' }),
+    }),
 };

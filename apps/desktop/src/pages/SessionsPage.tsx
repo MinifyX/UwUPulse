@@ -1,5 +1,4 @@
 import { Button, Card, EmptyState, Hint, ICONS, Nyu, Spinner, Tag } from '@uwusuite/design';
-import { save } from '@tauri-apps/plugin-dialog';
 import { useEffect, useMemo, useState } from 'react';
 import {
   api,
@@ -13,7 +12,7 @@ import {
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { HrGraph } from '../components/HrGraph';
 import { Page } from '../components/Page';
-import { exportFileName, formatBpm, formatDuration, formatPercent } from '../lib/format.ts';
+import { formatBpm, formatDuration, formatPercent } from '../lib/format.ts';
 import { formatDateTime, formatTime, t, useLanguage } from '../lib/i18n';
 import { useNow } from '../lib/pulse';
 import { toasts } from '../lib/toasts';
@@ -148,12 +147,8 @@ function SessionView({
     }
     setExporting(format);
     try {
-      const path = await save({
-        defaultPath: exportFileName(summary.startedAt, format),
-        filters: [{ name: format.toUpperCase(), extensions: [format] }],
-      });
+      const path = await api.exportSession(summary.id, format);
       if (!path) return;
-      await api.exportSession(summary.id, format, path);
       toasts.show(t('Exportiert nach {path}', { path }), { tone: 'success' });
     } catch (e) {
       toasts.show(t('Export fehlgeschlagen: {reason}', { reason: errorText(e) }), {

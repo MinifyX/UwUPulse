@@ -397,3 +397,12 @@ final class DesktopConnection: Identifiable {
         return try await task.receive()
     }
 }
+
+#if DEBUG
+extension DesktopConnection {
+    /// `-demo` launch argument (screenshots): shows a phase without connecting anywhere.
+    func showDemoPhase(_ demoPhase: Phase) {
+        phase = demoPhase
+    }
+}
+#endif

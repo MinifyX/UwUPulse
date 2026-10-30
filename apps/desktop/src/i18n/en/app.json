@@ -30,5 +30,17 @@
   "Kopplungsanfrage": "Pairing request",
   "Läuft in {n} s ab.": "Expires in {n} s.",
   "{name} ist gekoppelt.": "{name} is paired.",
-  "„{name}“ möchte sich koppeln. Zeigt das iPhone denselben Code?": "“{name}” wants to pair. Does the iPhone show the same code?"
+  "„{name}“ möchte sich koppeln. Zeigt das iPhone denselben Code?": "“{name}” wants to pair. Does the iPhone show the same code?",
+  "Ein Update ist bereit ✧": "An update is ready ✧",
+  "Jetzt neu starten": "Restart now",
+  "Nach Updates suchen …": "Check for Updates…",
+  "Overlays und Aufzeichnung pausieren kurz, solange UwUPulse neu startet.": "Overlays and recording pause briefly while UwUPulse restarts.",
+  "Problem melden": "Report a Problem",
+  "Später": "Later",
+  "Startet neu …": "Restarting…",
+  "UwUPulse auf GitHub": "UwUPulse on GitHub",
+  "UwUPulse ist auf dem neuesten Stand. ✧": "UwUPulse is up to date. ✧",
+  "Version {version}": "Version {version}",
+  "Versionen": "Releases",
+  "Was ist neu?": "What's new?"
 }

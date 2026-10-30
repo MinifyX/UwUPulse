@@ -199,3 +199,15 @@ final class LinkManager {
         }
     }
 }
+
+#if DEBUG
+extension LinkManager {
+    /// `-demo` launch argument (screenshots): one paired, connected desktop, nothing stored.
+    func showDemo(desktop: PairedDesktop, host: String) {
+        desktops = [desktop]
+        let connection = DesktopConnection(mode: .known(desktop), identity: identity, deviceName: deviceName)
+        connection.showDemoPhase(.ready(host: host))
+        connections = [desktop.id: connection]
+    }
+}
+#endif

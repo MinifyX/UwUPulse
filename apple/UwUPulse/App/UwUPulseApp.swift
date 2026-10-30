@@ -7,11 +7,16 @@ struct UwUPulseApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        UwUFont.applyToBars()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(AppModel.shared)
-                .tint(.accentColor)
+                .tint(Palette.pinkSolid)
+                .font(UwUFont.style(.body))
                 .onOpenURL { AppModel.shared.handle(url: $0) }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { AppModel.shared.becameActive() }
@@ -58,6 +63,12 @@ final class AppModel {
     func launch() {
         guard !launched else { return }
         launched = true
+        #if DEBUG
+        if Self.isDemo {
+            launchDemo()
+            return
+        }
+        #endif
         UIDevice.current.isBatteryMonitoringEnabled = true
 
         workout.onHeartRate = { [weak self] hr in
@@ -85,6 +96,9 @@ final class AppModel {
     }
 
     func becameActive() {
+        #if DEBUG
+        if Self.isDemo { return }
+        #endif
         links.resume()
         pushStatus()
     }
@@ -167,3 +181,53 @@ final class AppModel {
         links.updateStatus(StatusMessage(watch: workout.linkState, ble: straps.connectedNames, battery: battery))
     }
 }
+
+#if DEBUG
+extension AppModel {
+    /// `-demo` launch argument (simulator screenshots, App Store): a running watch workout with a
+    /// heart rate between 72 and 140 BPM, the paired desktop "Studio-PC" and the strap "Polar H10".
+    /// Nothing connects, nothing is stored.
+    static let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+
+    fileprivate func launchDemo() {
+        let args = ProcessInfo.processInfo.arguments
+        // `-demoTab desktops|straps|about` opens that tab; `-demoEmpty` leaves out desktop and strap.
+        if let i = args.firstIndex(of: "-demoTab"), i + 1 < args.count {
+            let tab: AppTab = switch args[i + 1] {
+            case "desktops": .desktops
+            case "straps": .straps
+            case "about": .about
+            default: .home
+            }
+            // After the tab view exists, or it starts on its first tab anyway.
+            Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(300))
+                self?.selectedTab = tab
+            }
+        }
+        workout.showDemo()
+        if !args.contains("-demoEmpty") {
+            straps.showDemo(name: "Polar H10")
+            let desktop = PairedDesktop(
+                id: "demo-studio-pc", name: "Studio-PC", publicKey: Data(repeating: 0, count: 32),
+                hosts: ["192.0.2.10"], port: 47_320
+            )
+            links.showDemo(desktop: desktop, host: "192.0.2.10")
+        }
+        Task { [weak self] in
+            var t = 28.0
+            while let self {
+                // A slow climb from rest to a hard effort and back, with a little jitter.
+                let wave = (1 - cos(t / 18)) / 2
+                let value = Int((72 + wave * 68 + Double.random(in: -2...2)).rounded())
+                bpm = value
+                source = .watch
+                lastSampleAt = .now
+                if straps.savedStrapID != nil { straps.showDemo(bpm: value - 1) }
+                t += 1
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+}
+#endif

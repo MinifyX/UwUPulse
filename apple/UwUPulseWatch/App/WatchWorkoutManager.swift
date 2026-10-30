@@ -179,3 +179,24 @@ extension WatchWorkoutManager: HKLiveWorkoutBuilderDelegate {
         Task { @MainActor in self.handleHeartRate(value, at: date) }
     }
 }
+
+#if DEBUG
+extension WatchWorkoutManager {
+    /// `-demo`: a running workout with a made-up rate, for screenshots. Touches no HealthKit.
+    static let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+
+    func showDemo() {
+        phase = .running
+        isMirrored = true
+        Task {
+            var t = 28.0
+            while !Task.isCancelled {
+                bpm = Int(72 + (1 - cos(t / 18)) / 2 * 68)
+                lastSampleAt = .now
+                t += 1
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+}
+#endif

@@ -178,12 +178,6 @@ importers:
       '@tauri-apps/plugin-clipboard-manager':
         specifier: ^2.0.0
         version: 2.5.0
-      '@tauri-apps/plugin-dialog':
-        specifier: ^2.0.0
-        version: 2.8.4
-      '@tauri-apps/plugin-opener':
-        specifier: ^2.0.0
-        version: 2.7.2
       '@uwusuite/design':
         specifier: https://github.com/MinifyX/UwUSuite-Design/releases/download/v1.8.1/uwusuite-design-1.8.1.tgz
         version: https://github.com/MinifyX/UwUSuite-Design/releases/download/v1.8.1/uwusuite-design-1.8.1.tgz(@tauri-apps/api@2.12.4)(lucide-react@1.64.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwindcss@4.3.3)
@@ -202,6 +196,55 @@ importers:
         version: 4.3.3(vite@5.4.21(@types/node@24.19.2)(lightningcss@1.32.0))
       '@tauri-apps/cli':
         specifier: ^2.0.0
+        version: 2.12.4
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      '@types/react':
+        specifier: ^18.3.3
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.1
+        version: 4.7.0(vite@5.4.21(@types/node@24.19.2)(lightningcss@1.32.0))
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@24.19.2)(lightningcss@1.32.0)
+
+  apps/setup:
+    dependencies:
+      '@tauri-apps/api':
+        specifier: ^2.11.1
+        version: 2.12.4
+      '@uwusuite/design':
+        specifier: https://github.com/MinifyX/UwUSuite-Design/releases/download/v1.8.1/uwusuite-design-1.8.1.tgz
+        version: https://github.com/MinifyX/UwUSuite-Design/releases/download/v1.8.1/uwusuite-design-1.8.1.tgz(@tauri-apps/api@2.12.4)(lucide-react@1.64.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwindcss@4.3.3)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.52.0
+        version: 1.64.0(@types/react@18.3.31)(react@18.3.1)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.3(vite@5.4.21(@types/node@24.19.2)(lightningcss@1.32.0))
+      '@tauri-apps/cli':
+        specifier: ^2.11.4
         version: 2.12.4
       '@types/node':
         specifier: ^24.0.0
@@ -799,12 +842,6 @@ packages:
 
   '@tauri-apps/plugin-clipboard-manager@2.5.0':
     resolution: {integrity: sha512-dibUy1nKURYDXRMvjNk4deAbTZ5jPQ8wCE4nolt5xniryWgXQ4sK2GkFXoXlHbRdPzfZptZj95BRLfalA7m/2Q==}
-
-  '@tauri-apps/plugin-dialog@2.8.4':
-    resolution: {integrity: sha512-+6ZOiXenOaxXwb8qCbBPdT2jX2cFPaVVHGIskrpmJLpmWj+qKRTD6X/z9x7hTdSQn7NedcoXCkWGej4a7dC4lw==}
-
-  '@tauri-apps/plugin-opener@2.7.2':
-    resolution: {integrity: sha512-LyybP1VSzTMQiaFYcsbAse47KpivlyXdLZMQzGLEnkgQacGESnpjAfFoQ6h5sqWgAdZDH9szYjPzHMpv0Sz+TQ==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -1548,14 +1585,6 @@ snapshots:
       '@tauri-apps/cli-win32-x64-msvc': 2.12.4
 
   '@tauri-apps/plugin-clipboard-manager@2.5.0':
-    dependencies:
-      '@tauri-apps/api': 2.12.4
-
-  '@tauri-apps/plugin-dialog@2.8.4':
-    dependencies:
-      '@tauri-apps/api': 2.12.4
-
-  '@tauri-apps/plugin-opener@2.7.2':
     dependencies:
       '@tauri-apps/api': 2.12.4
 

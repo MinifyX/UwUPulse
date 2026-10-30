@@ -9,9 +9,12 @@
 
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { listen as tauriListen, type UnlistenFn } from '@tauri-apps/api/event';
+import type { UpdateChannel } from './lib/prefs.ts';
+import type { ProjectPage, UpdateInfo } from './lib/updates.ts';
 import type { WidgetConfig } from './lib/widget.ts';
 
 export type { WidgetConfig } from './lib/widget.ts';
+export type { ProjectPage, UpdateInfo } from './lib/updates.ts';
 
 export type Src = 'watch' | 'ble';
 
@@ -183,12 +186,24 @@ export const api = {
   listSessions: () => call<SessionSummary[]>('list_sessions'),
   getSession: (id: string) => call<SessionDetail>('get_session', { id }),
   deleteSession: (id: string) => call<void>('delete_session', { id }),
-  exportSession: (id: string, format: ExportFormat, path: string) =>
-    call<void>('export_session', { id, format, path }),
+  /** Shows the save dialog (in the app, not the page); the path written, or null if cancelled. */
+  exportSession: (id: string, format: ExportFormat) =>
+    call<string | null>('export_session', { id, format }),
 
   getSettings: () => call<Settings>('get_settings'),
   setSettings: (settings: Settings) => call<Settings>('set_settings', { settings }),
   regenerateToken: () => call<ServerInfo>('regenerate_token'),
+
+  /** The About card's links; Rust knows the addresses. */
+  openProjectPage: (page: ProjectPage) => call<void>('open_project_page', { page }),
+
+  // Updates (src-tauri/src/updates.rs). A build without the updater answers
+  // "nothing waiting" and never finds one.
+  setUpdateChannel: (channel: UpdateChannel) => call<void>('set_update_channel', { channel }),
+  setAutoUpdate: (on: boolean) => call<void>('set_auto_update', { on }),
+  updateStatus: () => call<UpdateInfo | null>('update_status'),
+  checkForUpdates: () => call<UpdateInfo | null>('check_for_updates'),
+  installUpdate: () => call<void>('install_update'),
 };
 
 // ── Events ───────────────────────────────────────────────
@@ -203,6 +218,8 @@ export const events = {
     on<PairedDevice[]>('pulse://paired', handler),
   onBle: (handler: (devices: BleDevice[]) => void) => on<BleDevice[]>('pulse://ble', handler),
   onSessions: (handler: () => void) => on<unknown>('pulse://sessions', () => handler()),
+  /** A new version is downloaded, checked and waiting. */
+  onUpdateReady: (handler: (update: UpdateInfo) => void) => on<UpdateInfo>('update:ready', handler),
 };
 
 /** A command error as text: Tauri rejects with the Rust error's string (or an object). */

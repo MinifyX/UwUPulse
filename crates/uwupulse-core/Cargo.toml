@@ -22,6 +22,11 @@ uwupulse-proto.workspace = true
 axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "ws", "query", "json"] }
 base64.workspace = true
 gethostname = "1"
+# Our own accept loop (header timeout, connection caps); axum's `serve` sets
+# no timer. HTTP/1 only, like axum here, so no h2 in the tree.
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+tower-service = "0.3"
 if-addrs = "0.15"
 log.workspace = true
 mdns-sd = "0.21"

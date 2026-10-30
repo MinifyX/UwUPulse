@@ -11,7 +11,7 @@ import {
   StatusDot,
   Switch,
 } from '@uwusuite/design';
-import { Bluetooth, BluetoothSearching, Smartphone } from 'lucide-react';
+import { Bluetooth, BluetoothSearching } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   api,
@@ -81,7 +81,7 @@ function PairedCard() {
           {devices.map((d) => (
             <li key={d.id} className="row">
               <span className="row-icon">
-                <Icon icon={Smartphone} size="md" />
+                <Icon icon={ICONS.device} size="md" />
               </span>
               <div className="row-main">
                 <div className="row-title">

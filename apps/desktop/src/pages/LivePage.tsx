@@ -11,7 +11,7 @@ import {
   StatusLine,
   Tag,
 } from '@uwusuite/design';
-import { Bluetooth, Smartphone } from 'lucide-react';
+import { Bluetooth } from 'lucide-react';
 import { useState } from 'react';
 import { api, errorText, type Source, type WatchAction } from '../api';
 import { BeatHeart } from '../components/BeatHeart';
@@ -161,7 +161,7 @@ function SourceRow({ source, now }: { source: Source; now: number }) {
   return (
     <li className="row">
       <span className="row-icon">
-        <Icon icon={source.kind === 'phone' ? Smartphone : Bluetooth} size="md" />
+        <Icon icon={source.kind === 'phone' ? ICONS.device : Bluetooth} size="md" />
       </span>
       <div className="row-main">
         <div className="row-title">

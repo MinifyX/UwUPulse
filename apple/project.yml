@@ -26,6 +26,9 @@ targets:
     platform: iOS
     sources:
       - path: UwUPulse
+      # UwU Sans (SIL OFL 1.1, licence next to it), shared with the watch app.
+      - path: Shared/Fonts
+        buildPhase: resources
     dependencies:
       - package: PulseKit
       - target: UwUPulseWatch
@@ -49,8 +52,10 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
         LSRequiresIPhoneOS: true
+        UIAppFonts:
+          - UwUSans-wght.ttf
         UILaunchScreen:
-          UIColorName: ""
+          UIColorName: Canvas
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
@@ -84,6 +89,8 @@ targets:
     platform: watchOS
     sources:
       - path: UwUPulseWatch
+      - path: Shared/Fonts
+        buildPhase: resources
     dependencies:
       - package: PulseKit
     scheme: {}
@@ -105,6 +112,8 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
+        UIAppFonts:
+          - UwUSans-wght.ttf
         WKCompanionAppBundleIdentifier: $(UWUPULSE_BUNDLE_ID)
         WKBackgroundModes:
           - workout-processing

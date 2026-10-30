@@ -29,6 +29,10 @@ final class StrapManager: NSObject {
     private var central: CBCentralManager?
     private var peripheral: CBPeripheral?
     private var reconnectTask: Task<Void, Never>?
+    #if DEBUG
+    /// Set by the `-demo` launch argument: scanning stays off.
+    @ObservationIgnored var isDemo = false
+    #endif
 
     private static let savedKey = "strap.id"
     private static let restoreID = "app.uwupulse.ios.central"
@@ -43,6 +47,9 @@ final class StrapManager: NSObject {
     /// Creates the central. Only when a strap is saved or the user opens the strap screen,
     /// so the Bluetooth permission prompt does not appear on first launch.
     func activate() {
+        #if DEBUG
+        if isDemo { return }
+        #endif
         guard central == nil else { return }
         central = CBCentralManager(delegate: self, queue: .main, options: [
             CBCentralManagerOptionRestoreIdentifierKey: Self.restoreID,
@@ -202,3 +209,22 @@ extension StrapManager: @preconcurrency CBPeripheralDelegate {
         handleValue(data, from: peripheral)
     }
 }
+
+#if DEBUG
+extension StrapManager {
+    /// `-demo` launch argument (screenshots): a connected strap, Bluetooth never touched.
+    func showDemo(name: String) {
+        isDemo = true
+        bluetoothState = .poweredOn
+        isScanning = true
+        savedStrapID = UUID()
+        strapName = name
+        connectionState = .connected
+    }
+
+    func showDemo(bpm: Int) {
+        // Flags 0x06: sensor contact supported and detected, 8-bit value.
+        lastMeasurement = HeartRateMeasurement(data: Data([0x06, UInt8(clamping: bpm)]))
+    }
+}
+#endif

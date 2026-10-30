@@ -9,14 +9,13 @@ struct WatchContentView: View {
                 .frame(height: 44)
 
             Text(manager.bpm.map(String.init) ?? "--")
-                .font(.system(size: 64, weight: .bold, design: .rounded))
-                .monospacedDigit()
+                .font(WatchFont.style(.largeTitle, size: 60, weight: .heavy))
                 .contentTransition(.numericText())
                 .animation(.snappy, value: manager.bpm)
                 .minimumScaleFactor(0.6)
             Text("BPM")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .font(WatchFont.style(.footnote, size: 15, weight: .bold))
+                .foregroundStyle(WatchPalette.muted)
 
             statusLine
 
@@ -31,11 +30,15 @@ struct WatchContentView: View {
                     manager.phase == .running ? "Stop" : "Start",
                     systemImage: manager.phase == .running ? "stop.fill" : "play.fill"
                 )
+                .font(WatchFont.style(.body, size: 17, weight: .semibold))
             }
-            .tint(manager.phase == .running ? .gray : .accentColor)
+            .tint(manager.phase == .running ? WatchPalette.danger : WatchPalette.pink)
             .disabled(manager.phase == .starting || manager.phase == .ending)
         }
         .padding(.horizontal)
+        #if DEBUG
+        .task { if WatchWorkoutManager.isDemo, manager.phase == .idle { manager.showDemo() } }
+        #endif
     }
 
     @ViewBuilder private var statusLine: some View {
@@ -48,13 +51,15 @@ struct WatchContentView: View {
             case .running:
                 if manager.isMirrored {
                     Label("Mirrored to iPhone", systemImage: "iphone.radiowaves.left.and.right")
+                        .foregroundStyle(WatchPalette.success)
                 } else {
                     Label("iPhone not connected", systemImage: "iphone.slash")
+                        .foregroundStyle(WatchPalette.warning)
                 }
             }
         }
-        .font(.caption2)
-        .foregroundStyle(.secondary)
+        .font(WatchFont.style(.caption2, size: 13, weight: .medium))
+        .foregroundStyle(WatchPalette.muted)
         .multilineTextAlignment(.center)
     }
 }
@@ -69,7 +74,7 @@ struct WatchHeart: View {
         Image(systemName: "heart.fill")
             .resizable()
             .scaledToFit()
-            .foregroundStyle(Color.accentColor.gradient)
+            .foregroundStyle(WatchPalette.pink.gradient)
             .phaseAnimator(active && bpm != nil ? [1.0, 1.18, 1.0] : [1.0]) { view, scale in
                 view.scaleEffect(scale)
             } animation: { _ in

@@ -2,10 +2,14 @@
 //! page, and its events as `pulse://…`. Everything with substance lives in
 //! the core; this file only translates.
 
-use std::path::PathBuf;
+#[cfg(feature = "self-update")]
+mod updates;
 
+use chrono::TimeZone;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
+use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 use uwupulse_core::proto::WatchAction;
 use uwupulse_core::{
     AppState, BleDevice, Event, ExportFormat, PairedDevice, PairingOffer, Pulse, PulseOptions,
@@ -111,15 +115,51 @@ fn delete_session(pulse: State<'_, Pulse>, id: String) -> CmdResult<()> {
     pulse.delete_session(&id).map_err(err)
 }
 
-/// `path` comes from the page's save dialog.
+/// Asks where to save, then writes the export there. The page names only the
+/// session and the format: the path comes from the save dialog shown here,
+/// never from the page. `None` when the dialog was cancelled.
 #[tauri::command]
-fn export_session(
+async fn export_session(
+    app: AppHandle,
     pulse: State<'_, Pulse>,
     id: String,
     format: ExportFormat,
-    path: PathBuf,
-) -> CmdResult<()> {
-    pulse.export_session_to(&id, format, &path).map_err(err)
+) -> CmdResult<Option<String>> {
+    let started_at = pulse
+        .list_sessions()
+        .map_err(err)?
+        .into_iter()
+        .find(|s| s.id == id)
+        .ok_or("session not found")?
+        .started_at;
+    let (name, ext) = match format {
+        ExportFormat::Csv => ("CSV", "csv"),
+        ExportFormat::Json => ("JSON", "json"),
+    };
+    let file_name = chrono::Local
+        .timestamp_millis_opt(started_at)
+        .single()
+        .map(|t| export_file_name(&t.naive_local(), ext))
+        .unwrap_or_else(|| format!("uwupulse.{ext}"));
+    let dialog = app
+        .dialog()
+        .file()
+        .set_file_name(file_name)
+        .add_filter(name, &[ext]);
+    let picked = tauri::async_runtime::spawn_blocking(move || dialog.blocking_save_file())
+        .await
+        .map_err(|e| e.to_string())?;
+    let Some(picked) = picked else {
+        return Ok(None);
+    };
+    let path = picked.into_path().map_err(|e| e.to_string())?;
+    pulse.export_session_to(&id, format, &path).map_err(err)?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// `uwupulse-2026-10-30-1405.csv`: the session's local start time.
+fn export_file_name(t: &chrono::NaiveDateTime, ext: &str) -> String {
+    format!("uwupulse-{}.{ext}", t.format("%Y-%m-%d-%H%M"))
 }
 
 #[tauri::command]
@@ -136,6 +176,100 @@ async fn set_settings(pulse: State<'_, Pulse>, settings: Settings) -> CmdResult<
 fn regenerate_token(pulse: State<'_, Pulse>) -> CmdResult<ServerInfo> {
     pulse.regenerate_token().map_err(err)
 }
+
+// ── App: project pages, quitting, updates ───────────────
+
+/// The project pages the About card links to. The page names one; it never
+/// hands in an address of its own.
+#[tauri::command]
+fn open_project_page(app: AppHandle, page: String) -> CmdResult<()> {
+    let url = match page.as_str() {
+        "source" => "https://github.com/MinifyX/UwUPulse",
+        "releases" => "https://github.com/MinifyX/UwUPulse/releases",
+        "issues" => "https://github.com/MinifyX/UwUPulse/issues",
+        "license" => "https://github.com/MinifyX/UwUPulse/blob/main/LICENSE",
+        _ => return Err(format!("unknown page: {page}")),
+    };
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| format!("Couldn't open the browser: {e}"))
+}
+
+/// The page's answer to `quit-requested` (macOS: ⌘Q, the Dock, logging out).
+#[tauri::command]
+fn finish_quit(proceed: bool) {
+    #[cfg(target_os = "macos")]
+    uwu_macos::reply_quit(proceed);
+    #[cfg(not(target_os = "macos"))]
+    let _ = proceed;
+}
+
+/// The update commands exist in every build; without `self-update` they say
+/// there is nothing to update.
+#[cfg(feature = "self-update")]
+mod update_commands {
+    use super::updates::{self, Channel, UpdateInfo};
+    use tauri::AppHandle;
+
+    #[tauri::command]
+    pub fn set_update_channel(app: AppHandle, channel: Channel) {
+        updates::set_channel(&app, channel);
+    }
+
+    #[tauri::command]
+    pub fn set_auto_update(app: AppHandle, on: bool) {
+        updates::set_auto(&app, on);
+    }
+
+    #[tauri::command]
+    pub fn update_status(app: AppHandle) -> Option<UpdateInfo> {
+        updates::ready(&app)
+    }
+
+    #[tauri::command]
+    pub async fn check_for_updates(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
+        updates::check(&app).await
+    }
+
+    #[tauri::command]
+    pub async fn install_update(app: AppHandle) -> Result<(), String> {
+        updates::install_now(&app).await
+    }
+}
+
+#[cfg(not(feature = "self-update"))]
+mod update_commands {
+    use serde_json::Value;
+
+    #[tauri::command]
+    pub fn set_update_channel(channel: Value) {
+        let _ = channel;
+    }
+
+    #[tauri::command]
+    pub fn set_auto_update(on: bool) {
+        let _ = on;
+    }
+
+    #[tauri::command]
+    pub fn update_status() -> Option<Value> {
+        None
+    }
+
+    #[tauri::command]
+    pub fn check_for_updates() -> Result<Option<Value>, String> {
+        Ok(None)
+    }
+
+    #[tauri::command]
+    pub fn install_update() -> Result<(), String> {
+        Err("This copy of UwUPulse doesn't update itself.".into())
+    }
+}
+
+use update_commands::{
+    check_for_updates, install_update, set_auto_update, set_update_channel, update_status,
+};
 
 /// Hub events → `pulse://…` for the page. `Widget` only concerns the
 /// overlays; `Live` changes are part of the state.
@@ -188,7 +322,7 @@ fn start_pulse(app: &AppHandle) -> Result<Pulse, Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         // First, so a second start never gets as far as binding the port.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
@@ -204,11 +338,32 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_opener::init());
+    #[cfg(feature = "self-update")]
+    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    let app = builder
         .setup(|app| {
+            // ⌘Q, the Dock and logging out ask the page first (`onMacQuit` in
+            // App.tsx, answered through `finish_quit`).
+            #[cfg(target_os = "macos")]
+            {
+                let handle = app.handle().clone();
+                if let Err(error) = uwu_macos::install_quit_guard(move || {
+                    handle.emit(uwu_macos::QUIT_EVENT, ()).is_ok()
+                }) {
+                    log::warn!("quit guard: {error}");
+                }
+            }
+            // A waiting update is installed before the server takes its port.
+            #[cfg(feature = "self-update")]
+            if updates::apply_pending_on_start(app.handle()) {
+                std::process::exit(0);
+            }
             let pulse = start_pulse(app.handle())?;
             forward_events(app.handle().clone(), pulse.clone());
             app.manage(pulse);
+            #[cfg(feature = "self-update")]
+            updates::start(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -233,11 +388,31 @@ pub fn run() {
             get_settings,
             set_settings,
             regenerate_token,
+            open_project_page,
+            finish_quit,
+            set_update_channel,
+            set_auto_update,
+            update_status,
+            check_for_updates,
+            install_update,
         ])
         .build(tauri::generate_context!())
         .expect("error while building UwUPulse");
 
     app.run(|app, ev| {
+        // A click on the Dock icon brings the hidden window back; the server
+        // kept running meanwhile.
+        #[cfg(target_os = "macos")]
+        if let RunEvent::Reopen {
+            has_visible_windows: false,
+            ..
+        } = ev
+        {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }
         if let RunEvent::Exit = ev {
             // Close the recording, the sockets and the straps before leaving.
             if let Some(pulse) = app.try_state::<Pulse>() {
@@ -245,4 +420,19 @@ pub fn run() {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn export_file_name() {
+        let t = chrono::NaiveDate::from_ymd_opt(2026, 10, 30)
+            .unwrap()
+            .and_hms_opt(14, 5, 59)
+            .unwrap();
+        assert_eq!(
+            super::export_file_name(&t, "csv"),
+            "uwupulse-2026-10-30-1405.csv"
+        );
+    }
 }

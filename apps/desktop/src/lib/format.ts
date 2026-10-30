@@ -55,13 +55,6 @@ export function isLoopback(url: string): boolean {
   }
 }
 
-/** A file name for an exported session: uwupulse-2026-10-30-1405.csv */
-export function exportFileName(startedAt: number, format: 'csv' | 'json'): string {
-  const d = new Date(startedAt);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `uwupulse-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.${format}`;
-}
-
 /** A dense sample buffer: drops what is older than `keepMs` before `now`. */
 export function trimRecent<T extends [number, number]>(points: T[], now: number, keepMs: number) {
   const cutoff = now - keepMs;

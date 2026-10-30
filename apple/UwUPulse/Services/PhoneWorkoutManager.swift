@@ -176,3 +176,14 @@ extension PhoneWorkoutManager: WCSessionDelegate {
         session.activate()
     }
 }
+
+#if DEBUG
+extension PhoneWorkoutManager {
+    /// `-demo` launch argument (screenshots): a paired watch with a running workout.
+    func showDemo() {
+        watchPaired = true
+        watchAppInstalled = true
+        phase = .running
+    }
+}
+#endif

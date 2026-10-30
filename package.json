@@ -1,6 +1,6 @@
 {
   "name": "uwupulse",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@12.10.1",
@@ -11,6 +11,8 @@
     "dev": "pnpm --filter @uwupulse/desktop dev",
     "tauri": "pnpm --filter @uwupulse/desktop tauri",
     "build": "pnpm --filter @uwupulse/desktop build",
+    "build:setup": "node scripts/build-setup.mjs",
+    "release": "node scripts/release.mjs",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --if-present test",
     "lint": "prettier --check . && node scripts/check-i18n.mjs",

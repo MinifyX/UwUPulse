@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  exportFileName,
   formatBpm,
   formatCode,
   formatDuration,
@@ -53,11 +52,6 @@ test('isLoopback', () => {
   assert.ok(isLoopback('http://[::1]:8746'));
   assert.ok(!isLoopback('http://192.0.2.10:8746'));
   assert.ok(!isLoopback('nonsense'));
-});
-
-test('exportFileName', () => {
-  const ts = new Date(2026, 9, 30, 14, 5).getTime();
-  assert.equal(exportFileName(ts, 'csv'), 'uwupulse-2026-10-30-1405.csv');
 });
 
 test('trimRecent drops old points', () => {

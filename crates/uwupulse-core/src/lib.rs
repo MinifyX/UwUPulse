@@ -22,7 +22,7 @@ mod ble;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use parking_lot::Mutex;
 use qrcode::render::svg;
@@ -75,6 +75,9 @@ pub struct PulseOptions {
     pub device_name: Option<String>,
     /// Sent to API clients in `hello`.
     pub app_version: String,
+    /// How long a connection may take to send its request headers (also the
+    /// idle limit between keep-alive requests). Tests shorten it.
+    pub header_timeout: Duration,
 }
 
 impl PulseOptions {
@@ -86,6 +89,7 @@ impl PulseOptions {
             bonjour: true,
             device_name: None,
             app_version: env!("CARGO_PKG_VERSION").to_owned(),
+            header_timeout: Duration::from_secs(10),
         }
     }
 }
@@ -162,6 +166,7 @@ impl Pulse {
             generation: watch::channel(0).0,
             token_generation: watch::channel(0).0,
             port_override: opts.port_override,
+            header_timeout: opts.header_timeout,
             pairing: Mutex::new(PairingState::default()),
             links: Mutex::new(Default::default()),
             next_conn: AtomicU64::new(1),

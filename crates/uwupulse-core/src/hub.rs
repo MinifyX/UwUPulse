@@ -101,6 +101,7 @@ pub(crate) struct Inner {
     pub token_generation: watch::Sender<u64>,
     /// Tests bind port 0; the app leaves this `None` and uses the settings.
     pub port_override: Option<u16>,
+    pub header_timeout: Duration,
     pub pairing: Mutex<PairingState>,
     pub links: Mutex<HashMap<u64, LinkEntry>>,
     pub next_conn: AtomicU64,

@@ -10,13 +10,30 @@ repository.workspace = true
 name = "uwupulse_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+# What every download from GitHub is: a copy that looks for its own updates
+# and installs them. Without it there is no updater plugin, no update feed, no
+# setup download and no code that could start one (`updates.rs` is not
+# compiled at all).
+default = ["self-update"]
+self-update = [
+  "dep:base64",
+  "dep:minisign-verify",
+  "dep:semver",
+  "dep:tauri-plugin-updater",
+  "dep:tempfile",
+]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
 uwupulse-core = { workspace = true, features = ["ble"] }
 
+# The export's suggested file name, in local time.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 log.workspace = true
+parking_lot.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2", features = [] }
@@ -28,3 +45,30 @@ tauri-plugin-opener = "2"
 # fail to bind it. A second start focuses the first window instead.
 tauri-plugin-single-instance = "2"
 tokio.workspace = true
+
+# The updater (`self-update`). The downloaded setup is checked against the
+# release key once more, on the bytes on disk, just before it is started — so
+# that check lives here too and not only inside the updater plugin.
+base64 = { workspace = true, optional = true }
+minisign-verify = { version = "0.2", optional = true }
+semver = { version = "1", optional = true }
+tauri-plugin-updater = { version = "2", optional = true }
+
+# Whether another UwUPulse runs from the same program file before the setup
+# replaces it (`updates.rs`).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Threading",
+] }
+
+# A package update is handed to the package manager from a private scratch
+# folder (`self-update`).
+[target.'cfg(target_os = "linux")'.dependencies]
+tempfile = { version = "3", optional = true }
+
+# macOS: ⌘Q, the Dock and logging out quit through the page (lib.rs,
+# App.tsx). The tag matches the @uwusuite/design version in package.json.
+[target.'cfg(target_os = "macos")'.dependencies]
+uwu-macos = { git = "https://github.com/MinifyX/UwUSuite-Design", tag = "v1.8.1" }

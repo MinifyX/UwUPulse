@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="UwUPulse: Nyu as a heart with cat ears">
+  <title>UwUPulse</title>
+  <!--
+    Taskbar, window and Linux menus: Nyu alone, upright, no tile. Her shell is
+    a heart; the white die-cut edge keeps her visible on dark and light taskbars.
+  -->
+  <g transform="translate(256 256) scale(1.14) translate(-256 -248)"><g stroke-linecap="round" stroke-linejoin="round">
+    <g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="40">
+      <path d="M128 196 L130 92 Q132 72 150 82 L232 138 Z"/>
+      <path d="M384 196 L382 92 Q380 72 362 82 L280 138 Z"/>
+      <path d="M256 424 C176 374 88 310 88 220 C88 160 134 120 188 120 C222 120 244 136 256 158 C268 136 290 120 324 120 C378 120 424 160 424 220 C424 310 336 374 256 424 Z"/>
+    </g>
+    <g fill="#FF6FA6" stroke="#4B1D3F" stroke-width="17">
+      <path d="M128 196 L130 92 Q132 72 150 82 L232 138 Z"/>
+      <path d="M384 196 L382 92 Q380 72 362 82 L280 138 Z"/>
+    </g>
+    <g fill="#FFB8D3">
+      <path d="M150 140 L151 110 Q152 102 159 106 L196 132 Z"/>
+      <path d="M362 140 L361 110 Q360 102 353 106 L316 132 Z"/>
+    </g>
+    <path d="M256 424 C176 374 88 310 88 220 C88 160 134 120 188 120 C222 120 244 136 256 158 C268 136 290 120 324 120 C378 120 424 160 424 220 C424 310 336 374 256 424 Z" fill="#FF6FA6" stroke="#4B1D3F" stroke-width="17"/>
+    <path d="M124 214 C124 182 146 160 176 156" fill="none" stroke="#FFB8D3" stroke-width="14"/>
+    <g fill="#FF4D8D" opacity="0.5"><ellipse cx="160" cy="282" rx="22" ry="13"/><ellipse cx="352" cy="282" rx="22" ry="13"/></g>
+    <g fill="none" stroke="#4B1D3F" stroke-width="15">
+      <path d="M176 240 Q202 272 228 240"/>
+      <path d="M284 240 Q310 272 336 240"/>
+      <path d="M226 294 q15 22 30 0 q15 22 30 0"/>
+    </g>
+  </g></g>
+</svg>

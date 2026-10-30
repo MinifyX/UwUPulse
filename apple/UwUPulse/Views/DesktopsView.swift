@@ -9,7 +9,26 @@ struct DesktopsView: View {
 
     var body: some View {
         List {
-            Section {
+            if model.links.desktops.isEmpty {
+                Section {
+                    EmptyState(
+                        title: "No desktop paired yet",
+                        message: "Open UwUPulse on your computer and choose “Pair iPhone”. Then scan the QR code or pick the computer below.",
+                        mood: .sleepy,
+                        action: QRScannerView.isAvailable ? ("Scan QR code", "qrcode.viewfinder", { scannerShown = true }) : nil
+                    )
+                    .frame(maxWidth: .infinity)
+                    if let scanError {
+                        Text(scanError)
+                            .font(UwUFont.style(.footnote))
+                            .foregroundStyle(Palette.danger)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .listRowBackground(Color.clear)
+            } else {
+                Section {
                 ForEach(model.links.desktops) { desktop in
                     DesktopStatusRow(name: desktop.name, connection: model.links.connections[desktop.id])
                         .swipeActions {
@@ -23,45 +42,53 @@ struct DesktopsView: View {
                         }
                 }
             } header: {
-                Text("Paired")
-            } footer: {
-                if model.links.desktops.isEmpty {
-                    Text("Open UwUPulse on your computer and choose “Pair iPhone”. Then scan the QR code or pick the computer below.")
-                }
+                SectionHeader("Paired")
             }
 
             Section {
                 Button("Scan QR code", systemImage: "qrcode.viewfinder") { scannerShown = true }
+                    .foregroundStyle(Palette.pinkSolid)
                     .disabled(!QRScannerView.isAvailable)
                 if let scanError {
-                    Text(scanError).font(.footnote).foregroundStyle(.red)
+                    Text(scanError).font(UwUFont.style(.footnote)).foregroundStyle(Palette.danger)
                 }
+            }
             }
 
             Section {
                 if model.links.browser.permissionDenied {
                     Label("Allow local network access for UwUPulse in Settings to find your computer.", systemImage: "wifi.exclamationmark")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Palette.muted)
                 } else if model.links.unpairedNearby.isEmpty {
                     HStack(spacing: 10) {
                         ProgressView()
-                        Text("Searching for computers…").foregroundStyle(.secondary)
+                        Text("Searching for computers…").foregroundStyle(Palette.muted)
                     }
                 } else {
                     ForEach(model.links.unpairedNearby) { desktop in
                         Button {
                             model.startPairing(desktop)
                         } label: {
-                            Label(desktop.name, systemImage: "desktopcomputer")
+                            HStack(spacing: 12) {
+                                SymbolBadge(symbol: "desktopcomputer", color: Palette.pink)
+                                Text(desktop.name)
+                                    .font(UwUFont.style(.body, weight: .medium))
+                                    .foregroundStyle(Palette.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Palette.faint)
+                            }
                         }
                     }
                 }
             } header: {
-                Text("Nearby")
+                SectionHeader("Nearby")
             } footer: {
                 Text("Pairing with a nearby computer shows a 6-digit code on both devices. Confirm it on both devices if it matches.")
             }
         }
+        .suiteList()
         .navigationTitle("Desktops")
         .sheet(isPresented: $scannerShown) {
             NavigationStack {
@@ -116,6 +143,7 @@ struct PairingSheet: View {
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .canvasBackground()
             .navigationTitle(model.links.pairing?.name ?? String(localized: "Pairing"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -150,14 +178,19 @@ struct PairingSheet: View {
             ProgressView()
                 .controlSize(.large)
             Text("Connecting to \(pairing.name)…")
-                .foregroundStyle(.secondary)
+                .font(UwUFont.style(.body))
+                .foregroundStyle(Palette.muted)
         case .confirming(let code, let confirmed):
             Text(confirmed
                 ? "Now confirm the code on the computer."
                 : "Check that the computer shows the same code.")
+                .font(UwUFont.style(.body))
+                .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
             Text(code)
-                .font(.system(size: 52, weight: .bold, design: .monospaced))
+                .font(UwUFont.fixed(52, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(Palette.ink)
                 .kerning(6)
                 .textSelection(.enabled)
                 .accessibilityLabel(code.map(String.init).joined(separator: " "))
@@ -170,27 +203,30 @@ struct PairingSheet: View {
                     } label: {
                         Text("Codes match").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .primaryButton()
+                    .tint(Palette.pinkSolid)
                     Button(role: .cancel) {
                         dismiss()
                     } label: {
                         Text("Cancel").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .secondaryButton()
                 }
+                .font(UwUFont.style(.body, weight: .semibold))
                 .controlSize(.large)
             }
         case .ready:
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.green)
+                .foregroundStyle(Palette.success)
             Text("Paired with \(pairing.name)")
-                .font(.headline)
+                .font(UwUFont.style(.headline, weight: .bold))
         case .failed(let failure):
             Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.red)
+                .foregroundStyle(Palette.danger)
             Text(failure.localizedDescription)
+                .font(UwUFont.style(.body))
                 .multilineTextAlignment(.center)
         }
     }
@@ -219,8 +255,10 @@ struct ConfirmOfferSheet: View {
                 }
                 Section {
                     Button("Pair", systemImage: "link") { model.confirmOffer(confirmation) }
+                        .foregroundStyle(Palette.pinkSolid)
                 }
             }
+            .suiteList()
             .navigationTitle("Pair with computer?")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

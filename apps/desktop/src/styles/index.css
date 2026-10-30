@@ -5,7 +5,9 @@
  */
 @import 'tailwindcss';
 @import '@uwusuite/design/tailwind.css';
+@import '@uwusuite/design/font-picker.css';
 
 @source '../';
 
 @import './app.css' layer(components);
+@import './settings.css' layer(components);

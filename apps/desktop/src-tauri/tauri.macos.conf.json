@@ -5,15 +5,16 @@
       {
         "label": "main",
         "title": "UwUPulse",
-        "width": 1100,
-        "height": 720,
-        "minWidth": 900,
-        "minHeight": 600,
+        "width": 1180,
+        "height": 760,
+        "minWidth": 720,
+        "minHeight": 480,
         "center": true,
         "decorations": true,
         "titleBarStyle": "Visible",
         "shadow": true,
-        "resizable": true
+        "resizable": true,
+        "zoomHotkeysEnabled": false
       }
     ]
   }

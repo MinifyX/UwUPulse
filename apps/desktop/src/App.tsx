@@ -1,18 +1,14 @@
-import {
-  detectPlatform,
-  Icon,
-  ICONS,
-  TitleBar,
-  Toaster,
-  useAppearance,
-  UwuLabels,
-  Wordmark,
-} from '@uwusuite/design';
-import { useTauriWindow } from '@uwusuite/design/tauri';
+import { Icon, ICONS, matchesAccelerator, Toaster, UwuLabels } from '@uwusuite/design';
+import { hideWindowOnClose, onMacQuit } from '@uwusuite/design/tauri';
 import { Activity, Heart, MonitorPlay, type LucideIcon } from 'lucide-react';
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { api, events, inTauri, type UpdateInfo } from './api';
 import { PairRequestDialog } from './components/PairRequestDialog';
+import { platform, SETTINGS_SHORTCUT, TitleBar } from './components/TitleBar';
+import { UpdateHint } from './components/UpdateHint';
+import { useAppAppearance } from './lib/appearance';
 import { N_, t, useLanguage } from './lib/i18n';
+import { pageAccelerator, setPulseMacMenu } from './lib/macMenu';
 import { usePrefs } from './lib/prefs';
 import { isLive, startPulse, useNow, usePulse } from './lib/pulse';
 import { toasts } from './lib/toasts';
@@ -33,23 +29,110 @@ const NAV: { id: PageId; label: string; icon: LucideIcon }[] = [
   { id: 'settings', label: N_('Einstellungen'), icon: ICONS.settings },
 ];
 
-const platform = detectPlatform();
+const apple = platform === 'mac';
 
 export function App() {
   const lang = useLanguage();
   const prefs = usePrefs();
-  useAppearance({ theme: prefs.theme, contrast: 'system', motion: 'system' });
+  useAppAppearance(prefs);
   const [page, setPage] = useState<PageId>('live');
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [hintDismissed, setHintDismissed] = useState(false);
+  const openSettings = useCallback(() => setPage('settings'), []);
 
   useEffect(() => startPulse(), []);
+
+  // ── Updates (src-tauri/src/updates.rs) ──────────────────
   useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
+    void api.setUpdateChannel(prefs.updateChannel).catch(() => undefined);
+  }, [prefs.updateChannel]);
+  useEffect(() => {
+    void api.setAutoUpdate(prefs.autoUpdate).catch(() => undefined);
+  }, [prefs.autoUpdate]);
+  useEffect(() => {
+    void api
+      .updateStatus()
+      .then((found) => found && setUpdate(found))
+      .catch(() => undefined);
+    return events.onUpdateReady((found) => {
+      setUpdate(found);
+      setHintDismissed(false);
+    });
+  }, []);
+  const installUpdate = useCallback(() => api.installUpdate(), []);
+  const checkFromMenu = useCallback(() => {
+    setPage('settings');
+    void api
+      .checkForUpdates()
+      .then((found) => {
+        if (found) setUpdate(found);
+        else toasts.show(t('UwUPulse ist auf dem neuesten Stand. ✧'), { tone: 'success' });
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // ── Keyboard: ⌘, / Ctrl+, and ⌘1 … ⌘5 (the menu bar has them on a Mac) ──
+  useEffect(() => {
+    if (apple && inTauri) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (matchesAccelerator(event, SETTINGS_SHORTCUT, apple)) {
+        event.preventDefault();
+        setPage('settings');
+        return;
+      }
+      NAV.forEach((item, index) => {
+        const accelerator = pageAccelerator(index);
+        if (accelerator && matchesAccelerator(event, accelerator, apple)) {
+          event.preventDefault();
+          setPage(item.id);
+        }
+      });
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // ── macOS: menu bar, closing hides, ⌘Q quits ────────────
+  useEffect(() => {
+    if (!apple || !inTauri) return;
+    void setPulseMacMenu({
+      lang,
+      pages: NAV.map(({ id, label }) => ({ id, label })),
+      current: page,
+      go: setPage,
+      onSettings: openSettings,
+      onCheckForUpdates: checkFromMenu,
+      openProjectPage: (target) => void api.openProjectPage(target).catch(() => undefined),
+    }).catch(() => undefined);
+  }, [lang, page, openSettings, checkFromMenu]);
+
+  useEffect(() => {
+    if (!apple || !inTauri) return;
+    const stops: Array<() => void> = [];
+    let stopped = false;
+    const keep = (stop: () => void) => {
+      if (stopped) stop();
+      else stops.push(stop);
+    };
+    // ⌘W and the red light hide the window; the server, the recording and
+    // the overlays keep running, the Dock icon brings it back (lib.rs).
+    void hideWindowOnClose(platform)
+      .then(keep)
+      .catch(() => undefined);
+    // ⌘Q, the Dock, logging out: nothing to save, so it just ends.
+    void onMacQuit(async () => true, { platform })
+      .then(keep)
+      .catch(() => undefined);
+    return () => {
+      stopped = true;
+      for (const stop of stops) stop();
+    };
+  }, []);
 
   return (
     <UwuLabels labels={lang}>
       <div className="shell">
-        <WindowBar />
+        <TitleBar onSettings={openSettings} />
         <div className="shell-body">
           <Sidebar page={page} go={setPage} />
           <main className="shell-main" key={page}>
@@ -57,36 +140,26 @@ export function App() {
             {page === 'overlay' && <OverlayPage />}
             {page === 'sessions' && <SessionsPage />}
             {page === 'devices' && <DevicesPage />}
-            {page === 'settings' && <SettingsPage />}
+            {page === 'settings' && (
+              <SettingsPage
+                update={update}
+                onUpdateFound={setUpdate}
+                onInstallUpdate={installUpdate}
+              />
+            )}
           </main>
         </div>
       </div>
+      {update && !hintDismissed && page !== 'settings' && (
+        <UpdateHint
+          update={update}
+          onLater={() => setHintDismissed(true)}
+          onRestart={installUpdate}
+        />
+      )}
       <PairRequestDialog />
       <Toaster store={toasts} />
     </UwuLabels>
-  );
-}
-
-/**
- * Tauri maximizes on a double-click of a drag region itself; the package's
- * title bar would do it again and undo it. Capture keeps the second one away.
- */
-function leaveDoubleClickToTauri(event: MouseEvent) {
-  if ((event.target as HTMLElement).hasAttribute('data-tauri-drag-region')) event.stopPropagation();
-}
-
-/** Own title bar on Windows and Linux; macOS draws its native one. */
-function WindowBar() {
-  const controls = useTauriWindow();
-  if (platform === 'mac') return null;
-  return (
-    <div className="titlebar-frame" onDoubleClickCapture={leaveDoubleClickToTauri}>
-      <TitleBar
-        platform={platform}
-        controls={controls}
-        brand={<Wordmark product="Pulse" shell="box" className="text-body" />}
-      />
-    </div>
   );
 }
 
@@ -97,7 +170,6 @@ function Sidebar({ page, go }: { page: PageId; go: (page: PageId) => void }) {
   const live = isLive(pulse, now);
   return (
     <nav className="sidebar" aria-label={t('Bereiche')}>
-      {platform === 'mac' && <Wordmark product="Pulse" shell="box" className="sidebar-brand" />}
       <ul className="nav-list">
         {NAV.map((item) => (
           <li key={item.id}>
@@ -108,7 +180,7 @@ function Sidebar({ page, go }: { page: PageId; go: (page: PageId) => void }) {
               onClick={() => go(item.id)}
             >
               <Icon icon={item.icon} size="md" />
-              <span>{t(item.label)}</span>
+              <span className="nav-label">{t(item.label)}</span>
             </button>
           </li>
         ))}

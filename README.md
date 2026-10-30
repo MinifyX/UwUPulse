@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/icon.svg" width="120" alt="UwUPulse"></p>
+<p align="center"><img src="brand/uwupulse-app-icon.svg" width="120" alt="UwUPulse"></p>
 
 <h1 align="center">UwUPulse</h1>
 

@@ -1,0 +1,220 @@
+/*
+ * The installer, from @uwusuite/design: tokens, UwU Sans, the base layer, the
+ * motion keyframes, Nyu's CSS (the edge, blinking, the scene loops) and the
+ * title bar. The setup is always light (main.tsx), on the app tile's gradient
+ * with plum text, a translucent card and a striped pink bar (the package's
+ * docs/window.md, "Installers"). Below is only what the installer adds: the
+ * title bar over the gradient, the card, the sparkles, Nyu's hop and toss, the
+ * beating hearts and pulse lines, and the stripes.
+ */
+@import 'tailwindcss';
+@import '@uwusuite/design/tailwind.css';
+
+/* The installer's own sources, Nyu's scenes included (src/nyu.tsx). */
+@source '../src';
+
+body {
+  cursor: default;
+  color: var(--uwu-plum);
+  background: linear-gradient(180deg, var(--uwu-tile-from) 0%, var(--uwu-tile-to) 100%);
+}
+
+/*
+ * The package's title bar, see-through over the gradient. The window can't be
+ * maximized (src-tauri/src/app.rs), so its button goes; closing waits while
+ * the installer works.
+ */
+.setup-titlebar .uwu-titlebar {
+  height: 44px;
+  padding-left: 8px;
+  border-bottom: 0;
+  background: transparent;
+  color: var(--uwu-plum);
+}
+
+.setup-titlebar .uwu-titlebar-action {
+  width: 32px;
+  height: 32px;
+  color: var(--uwu-plum-soft);
+}
+
+.setup-titlebar .uwu-titlebar-action:hover:not(:disabled),
+.setup-titlebar .uwu-window-control:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.7);
+  color: var(--uwu-plum);
+}
+
+.setup-titlebar .uwu-window-control {
+  color: var(--uwu-plum);
+}
+
+.setup-titlebar .uwu-window-control[data-kind='close']:hover:not(:disabled) {
+  background: var(--uwu-pink-solid);
+  color: var(--uwu-on-pink);
+}
+
+.setup-titlebar[data-busy] .uwu-window-control[data-kind='close'] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/*
+ * The installer window is 460 px wide, so the package's phone: rules (taller,
+ * wrapping buttons) would apply; the pills keep their desktop shape here.
+ * Plain CSS on purpose: it outranks Tailwind's layered utilities.
+ */
+.setup-button {
+  height: 44px;
+  min-height: 0;
+  white-space: nowrap;
+}
+
+.setup-quiet {
+  color: var(--uwu-plum-soft);
+}
+
+.setup-quiet:hover {
+  background: rgb(255 255 255 / 0.7);
+  color: var(--uwu-plum);
+}
+
+.setup-card {
+  background: rgb(255 255 255 / 0.82);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 22px 44px -22px rgb(194 48 111 / 0.4);
+  backdrop-filter: blur(10px);
+}
+
+/* The package's muted grey reads as plum here, like the rest of the text. */
+.setup-card .text-muted {
+  color: var(--uwu-plum-soft);
+}
+
+.setup-sparkles {
+  background-image:
+    radial-gradient(circle at 12% 18%, rgb(255 255 255 / 0.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 86% 12%, rgb(255 214 110 / 0.9) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 92% 64%, rgb(255 255 255 / 0.8) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 6% 72%, rgb(255 111 166 / 0.5) 0 2px, transparent 3px);
+}
+
+.setup-hop {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: setup-hop 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+
+.setup-toss {
+  transform-box: fill-box;
+  opacity: 0;
+  animation: setup-toss 1.65s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.setup-bar {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--uwu-pink) 82%, #fff) 0 12px,
+    color-mix(in srgb, var(--uwu-pink) 64%, #fff) 12px 24px
+  );
+  background-size: 34px 34px;
+  animation: setup-stripes 900ms linear infinite;
+}
+
+@keyframes setup-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  15% {
+    transform: translateY(0) scale(1.06, 0.92);
+  }
+  45% {
+    transform: translateY(-9%) scale(0.97, 1.04);
+  }
+  75% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+}
+
+@keyframes setup-toss {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0);
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(62px, -58px) rotate(24deg);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(128px, 36px) rotate(40deg) scale(0.8);
+  }
+}
+
+/* The hearts beat at a calm 72 bpm: a double thump, then rest. */
+.setup-heartbeat {
+  transform-box: fill-box;
+  transform-origin: 50% 60%;
+  animation: setup-heartbeat 833ms ease-out infinite;
+}
+
+/* The pulse line draws itself, left to right, once per beat. */
+.setup-beat {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: setup-beat 1666ms linear infinite;
+}
+
+@keyframes setup-heartbeat {
+  0%,
+  45%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.14);
+  }
+  24% {
+    transform: scale(0.98);
+  }
+  34% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes setup-beat {
+  0% {
+    stroke-dashoffset: 200;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes setup-stripes {
+  to {
+    background-position: 34px 0;
+  }
+}
+
+/* Motion off (main.tsx follows the system): the package stops everything else. */
+:root[data-motion='reduced'] .setup-bar,
+:root[data-motion='reduced'] .setup-heartbeat {
+  animation: none !important;
+}
+
+:root[data-motion='reduced'] .setup-beat {
+  animation: none !important;
+  stroke-dashoffset: 0;
+}
+
+:root[data-motion='reduced'] .setup-toss {
+  display: none;
+}

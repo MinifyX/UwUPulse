@@ -24,6 +24,10 @@
 	<string>UwUPulse reads your heart rate during a live workout to forward it to your iPhone.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>UwUPulse runs a workout session to measure your heart rate. Nothing is saved to Health.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>UwUSans-wght.ttf</string>
+	</array>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKBackgroundModes</key>

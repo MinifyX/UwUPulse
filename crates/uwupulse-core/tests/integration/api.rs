@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use tokio_tungstenite::tungstenite::Message;
 use uwupulse_core::{ExportFormat, HrSample, Src};
 
-use crate::{http, next_msg, start, ws_connect};
+use crate::{http, next_msg, start, start_with, ws_connect, WAIT};
 
 fn sample(bpm: u16, ts: i64) -> HrSample {
     HrSample {
@@ -280,4 +280,34 @@ async fn settings_restart_the_server() {
     let v: Value = serde_json::from_str(&file).unwrap();
     assert_eq!(v["idleTimeoutSecs"], 60);
     env.pulse.shutdown().await;
+}
+
+/// A connection that never sends its request headers is closed, so idle
+/// sockets can't pile up.
+#[tokio::test]
+async fn silent_connection_is_closed() {
+    let env = start_with(|o| o.header_timeout = std::time::Duration::from_millis(200)).await;
+    let mut tcp = tokio::net::TcpStream::connect(("127.0.0.1", env.port))
+        .await
+        .unwrap();
+    let mut buf = Vec::new();
+    // EOF (or a reset) instead of hanging until WAIT.
+    let read = tokio::time::timeout(
+        WAIT,
+        tokio::io::AsyncReadExt::read_to_end(&mut tcp, &mut buf),
+    )
+    .await
+    .expect("silent connection was not closed");
+    if let Ok(n) = read {
+        assert_eq!(n, buf.len());
+    }
+    // The server still serves everyone else.
+    let ok = http(
+        env.port,
+        "GET",
+        &format!("/api/v1/current?token={}", env.token),
+        &[],
+    )
+    .await;
+    assert_eq!(ok.status, 200);
 }
