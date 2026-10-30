@@ -52,7 +52,8 @@ type UpdateProps = {
 
 export function SettingsPage(props: UpdateProps) {
   useLanguage();
-  // A host without its own updater (the OBS plugin) has no Updates card.
+  // A host without its own updater (the OBS plugin) is updated by the
+  // UwUPulse setup, which says so instead of offering an update button.
   const [host, setHost] = useState<HostInfo | null>(null);
   useEffect(() => {
     void api
@@ -67,7 +68,7 @@ export function SettingsPage(props: UpdateProps) {
       <RecordingCard />
       <AppearanceCard />
       <ApiCard />
-      {updates && <UpdatesCard {...props} />}
+      {updates ? <UpdatesCard {...props} /> : <SetupUpdatesCard />}
       <AboutCard />
     </Page>
   );
@@ -449,6 +450,29 @@ function ApiCard() {
 }
 
 type CheckResult = { tone: 'success' | 'danger'; text: string } | null;
+
+/** Updates for the OBS plugin: they come with the UwUPulse setup. */
+function SetupUpdatesCard() {
+  return (
+    <Card title={t('Updates')}>
+      <SettingRow
+        label={t('Version {version}', { version: APP_VERSION || '–' })}
+        description={t(
+          'Updates über den UwUPulse-Setup: Lade die neue Version herunter und starte ihn, er bringt das OBS-Plugin mit auf den neuesten Stand.',
+        )}
+      >
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={ICONS.openExternal}
+          onClick={() => void api.openProjectPage('releases')}
+        >
+          {t('Versionen')}
+        </Button>
+      </SettingRow>
+    </Card>
+  );
+}
 
 function UpdatesCard({ update, onUpdateFound, onInstallUpdate }: UpdateProps) {
   const lang = useLanguage();

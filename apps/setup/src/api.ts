@@ -5,6 +5,23 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 export interface Options {
   dir: string;
   desktopShortcut: boolean;
+  /** Install or update the desktop app. */
+  app: boolean;
+  /** Install or update the OBS plugin. */
+  obs: boolean;
+}
+
+/** The OBS plugin on this computer (src-tauri/src/obs.rs). */
+export interface ObsInfo {
+  /** The plugin is packed in this setup (not on Linux ARM64). */
+  available: boolean;
+  /** OBS Studio seems to be installed. */
+  detected: boolean;
+  /** OBS Studio is open: the plugin loads when it restarts. */
+  running: boolean;
+  /** Where the plugin goes. */
+  dir: string;
+  installed: { dir: string; version: string } | null;
 }
 
 export interface Info {
@@ -17,6 +34,7 @@ export interface Info {
   sandbox: boolean;
   relaunch: boolean;
   platform: 'windows' | 'macos' | 'linux';
+  obs: ObsInfo;
 }
 
 export type Step = 'prepare' | 'copy' | 'shortcuts' | 'register' | 'cleanup' | 'done';
@@ -58,13 +76,15 @@ const tauriApi: SetupApi = {
 
 /**
  * Pretends to install, for working on the page in a normal browser.
- * `?mode=update`, `?mode=uninstall`, `?running` and `?fail` show the other states.
+ * `?mode=update`, `?mode=uninstall`, `?running` and `?fail` show the other states;
+ * `?obs=missing|running|none` the OBS plugin's (none: not in this setup).
  */
 function previewApi(): SetupApi {
   const params = new URLSearchParams(window.location.search);
   const listeners = new Set<(progress: Progress) => void>();
   let running = params.has('running');
   const dir = 'C:\\Users\\Nyu\\AppData\\Local\\Programs\\UwUPulse';
+  const obs = params.get('obs');
   const pretend = async (steps: Step[]) => {
     for (let i = 1; i <= 40; i += 1) {
       await new Promise((resolve) => setTimeout(resolve, 60));
@@ -78,12 +98,19 @@ function previewApi(): SetupApi {
       mode: (params.get('mode') as Info['mode'] | null) ?? 'install',
       version: '0.1.0',
       installed: params.get('mode') ? { dir, version: '0.1.0' } : null,
-      options: { dir, desktopShortcut: true },
+      options: { dir, desktopShortcut: true, app: true, obs: obs !== 'missing' && obs !== 'none' },
       appRunning: running,
       hasPayload: true,
       sandbox: false,
       relaunch: true,
       platform: (params.get('platform') as Info['platform'] | null) ?? 'windows',
+      obs: {
+        available: obs !== 'none',
+        detected: obs !== 'missing',
+        running: obs === 'running',
+        dir: 'C:\\ProgramData\\obs-studio\\plugins\\uwupulse',
+        installed: null,
+      },
     }),
     pickFolder: async () => 'D:\\Apps\\UwUPulse',
     closeApp: async () => {

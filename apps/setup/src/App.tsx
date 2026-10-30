@@ -1,5 +1,6 @@
 import {
   Button,
+  Hint,
   Icon,
   ICONS,
   TitleBar,
@@ -67,15 +68,23 @@ function SetupToggle({
   onChange,
   label,
   hint,
+  disabled,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
   hint?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="px-2 py-2">
-      <Toggle checked={checked} onChange={onChange} label={label} description={hint} />
+      <Toggle
+        checked={checked}
+        onChange={onChange}
+        label={label}
+        description={hint}
+        disabled={disabled}
+      />
     </div>
   );
 }
@@ -297,43 +306,86 @@ export function App() {
     : installed.version === info.version
       ? t.reinstall
       : t.update;
+  const obs = info.obs;
+  const nothingPicked = !options.app && !options.obs;
+  const optionsOpen = showOptions && options.app;
+  // Restarting OBS is up to the user: the setup never closes it.
+  const obsHint =
+    options.obs && !obs.detected ? (
+      <Hint tone="warning" className="mx-2 mb-1">
+        {t.obsMissing}
+      </Hint>
+    ) : options.obs && obs.running ? (
+      <Hint tone="info" className="mx-2 mb-1">
+        {t.obsRunning}
+      </Hint>
+    ) : null;
   const startInstall = () => {
-    if (info.appRunning) setScreen('running');
+    if (info.appRunning && options.app) setScreen('running');
     else void run('install', options, info);
   };
 
   if (screen === 'welcome') {
     return shell(
       <>
-        <Stage
-          scene={<WelcomeScene />}
-          compact={showOptions}
-          title={installed ? t.againTitle : t.welcomeTitle}
-          body={
-            installed
-              ? fill(t.againBody, { installed: installed.version ?? '', version: info.version })
-              : fill(t.welcomeBody, { computer })
-          }
-        />
-        <div className="flex flex-col items-center gap-2 pt-5">
-          <SetupButton onClick={startInstall} autoFocus disabled={!info.hasPayload}>
+        {/* Components and options together leave no room for Nyu. */}
+        {!(obs.available && optionsOpen) && (
+          <Stage
+            scene={<WelcomeScene />}
+            compact={optionsOpen || obs.available}
+            title={installed ? t.againTitle : t.welcomeTitle}
+            body={
+              installed
+                ? fill(t.againBody, { installed: installed.version ?? '', version: info.version })
+                : fill(t.welcomeBody, { computer })
+            }
+          />
+        )}
+        {obs.available && (
+          <div className="setup-card animate-slide-up rounded-dialog mt-4 w-full p-2">
+            <p className="text-pink-solid text-caption px-2 pt-1 font-extrabold tracking-wide uppercase">
+              {t.components}
+            </p>
+            <SetupToggle
+              checked={options.app}
+              onChange={(app) => setOptions({ ...options, app })}
+              label={t.componentApp}
+              hint={t.componentAppHint}
+            />
+            <SetupToggle
+              checked={options.obs}
+              onChange={(value) => setOptions({ ...options, obs: value })}
+              label={t.componentObs}
+              hint={t.componentObsHint}
+            />
+            {obsHint}
+          </div>
+        )}
+        <div className="flex flex-col items-center gap-2 pt-4">
+          <SetupButton
+            onClick={startInstall}
+            autoFocus
+            disabled={nothingPicked || (options.app && !info.hasPayload)}
+          >
             {actionLabel} ♡
           </SetupButton>
-          <button
-            type="button"
-            onClick={() => setShowOptions(!showOptions)}
-            aria-expanded={showOptions}
-            className="text-plum-soft hover:text-plum text-meta flex items-center gap-1 rounded-full px-3 py-1 font-bold"
-          >
-            {showOptions ? t.fewerOptions : t.options}
-            <Icon
-              icon={ICONS.expand}
-              size="xs"
-              className={clsx('transition-transform', showOptions && 'rotate-180')}
-            />
-          </button>
+          {options.app && (
+            <button
+              type="button"
+              onClick={() => setShowOptions(!showOptions)}
+              aria-expanded={showOptions}
+              className="text-plum-soft hover:text-plum text-meta flex items-center gap-1 rounded-full px-3 py-1 font-bold"
+            >
+              {showOptions ? t.fewerOptions : t.options}
+              <Icon
+                icon={ICONS.expand}
+                size="xs"
+                className={clsx('transition-transform', showOptions && 'rotate-180')}
+              />
+            </button>
+          )}
         </div>
-        {showOptions && (
+        {optionsOpen && (
           <div className="setup-card animate-slide-up rounded-dialog mt-1 w-full p-3">
             <div className="flex items-center gap-2 px-2 pb-1">
               <Icon icon={ICONS.folder} size="sm" className="text-pink-solid shrink-0" />
@@ -363,7 +415,7 @@ export function App() {
             )}
           </div>
         )}
-        {installed && info.platform !== 'windows' && !showOptions && (
+        {(installed || obs.installed) && info.platform !== 'windows' && !optionsOpen && (
           <button
             type="button"
             onClick={() =>
@@ -460,14 +512,40 @@ export function App() {
           <Stage
             scene={<DoneScene />}
             title={t.updateDoneTitle}
-            body={fill(t.updateDoneBody, { version: info.version })}
+            body={fill(installed ? t.updateDoneBody : t.updateDoneObsBody, {
+              version: info.version,
+            })}
           />
         </div>,
+      );
+    }
+    if (!options.app) {
+      return shell(
+        <>
+          <div className="my-auto flex w-full flex-col items-center">
+            <Stage scene={<DoneScene />} title={t.doneTitle} body={t.obsDoneBody} />
+            {obs.running && (
+              <Hint tone="info" className="mt-4 w-full">
+                {t.obsRestart}
+              </Hint>
+            )}
+          </div>
+          <div className="flex items-center gap-2 pt-3">
+            <SetupButton autoFocus onClick={() => void api.finish()}>
+              {t.close}
+            </SetupButton>
+          </div>
+        </>,
       );
     }
     return shell(
       <>
         <Stage scene={<DoneScene />} title={t.doneTitle} body={t.doneBody} />
+        {options.obs && obs.running && (
+          <Hint tone="info" className="mt-3 w-full">
+            {t.obsRestart}
+          </Hint>
+        )}
         <div className="setup-card animate-slide-up rounded-dialog mt-4 w-full px-4 py-3">
           <p className="text-pink-solid text-caption pb-1 font-extrabold tracking-wide uppercase">
             {t.tipsTitle}
@@ -542,6 +620,11 @@ export function App() {
             label={t.keepData}
             hint={t.keepDataHint}
           />
+          {obs.installed && (
+            <Hint tone="info" className="mx-2 mb-1">
+              {t.uninstallObs}
+            </Hint>
+          )}
         </div>
         <div className="mt-auto flex items-center gap-2 pt-3">
           <SetupButton variant="quiet" onClick={() => void api.finish()}>

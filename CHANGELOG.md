@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- OBS plugin in the setup: choose Desktop app and/or OBS plugin (preselected when OBS Studio is found). Updates keep the plugin current, uninstalling removes it. OBS is never closed; the setup asks for a restart instead.
+- Releases carry the OBS plugin on its own: .zip for Windows x64/ARM64 and macOS, .tar.gz and a `uwupulse-obs` .deb for Linux x64.
+- The dock inside OBS points to the setup for updates.
+
 ## 1.0.0
 
 First release.

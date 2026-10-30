@@ -209,6 +209,42 @@ pub fn processes_of(exe: &Path) -> Vec<u32> {
     found
 }
 
+/// The executable names (`obs64.exe`) of every running process. Names only:
+/// the full path of another user's process can't be read without rights.
+pub fn executables() -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    unsafe {
+        let Ok(snapshot) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) else {
+            return found;
+        };
+        let mut entry = PROCESSENTRY32W {
+            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+            ..Default::default()
+        };
+        let mut ok = Process32FirstW(snapshot, &mut entry).is_ok();
+        while ok {
+            let end = entry.szExeFile.iter().position(|c| *c == 0).unwrap_or(0);
+            found.push(PathBuf::from(String::from_utf16_lossy(
+                &entry.szExeFile[..end],
+            )));
+            ok = Process32NextW(snapshot, &mut entry).is_ok();
+        }
+        let _ = CloseHandle(snapshot);
+    }
+    found
+}
+
+/// Where OBS Studio's installer put it, as it noted in the registry.
+pub fn obs_install_dir() -> Option<PathBuf> {
+    use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ, KEY_WOW64_64KEY};
+    winreg::RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey_with_flags(r"SOFTWARE\OBS Studio", KEY_READ | KEY_WOW64_64KEY)
+        .and_then(|key| key.get_value::<String, _>(""))
+        .ok()
+        .filter(|dir| !dir.is_empty())
+        .map(PathBuf::from)
+}
+
 fn open(pid: u32, rights: PROCESS_ACCESS_RIGHTS) -> Option<HANDLE> {
     unsafe { OpenProcess(rights, false, pid).ok() }
 }
@@ -374,9 +410,22 @@ pub fn in_user_folders(dir: &Path, folders: &Folders) -> bool {
 /// inherit it. For install folders outside the user profile, which would
 /// otherwise let every user replace UwUPulse.exe.
 pub fn restrict_to_user(dir: &Path) -> Result<(), String> {
+    set_access(dir, "")
+}
+
+/// Like [`restrict_to_user`], but every user of the computer may read and
+/// run what is inside: for the OBS plugin in ProgramData, which OBS loads for
+/// whoever starts it.
+pub fn restrict_to_user_shared(dir: &Path) -> Result<(), String> {
+    // 0x1200a9: read, read attributes, list and execute (FILE_GENERIC_READ |
+    // FILE_GENERIC_EXECUTE), for the built-in Users group.
+    set_access(dir, "(A;OICI;0x1200a9;;;BU)")
+}
+
+fn set_access(dir: &Path, extra: &str) -> Result<(), String> {
     let fail = |e: &dyn std::fmt::Display| format!("Couldn't protect {}: {e}", dir.display());
     let sddl = format!(
-        "D:P(A;OICI;FA;;;{})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)",
+        "D:P(A;OICI;FA;;;{})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA){extra}",
         user_sid().map_err(|e| fail(&e))?
     );
     // SAFETY: the strings outlive the calls; the descriptor is freed after

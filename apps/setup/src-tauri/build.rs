@@ -9,7 +9,11 @@
 //! whole WebKit stack, and a window that reaches across all of it finds the
 //! repeats between its libraries.
 //!
-//! `pnpm build:setup` sets the variable. Without it the setup still builds,
+//! `UWUPULSE_SETUP_OBS_PAYLOAD` points at a folder holding the OBS plugin
+//! (`uwupulse.plugin` on macOS, `uwupulse` elsewhere), packed the same way on
+//! every platform. Unset where there is no plugin (Linux on ARM).
+//!
+//! `pnpm build:setup` sets the variables. Without them the setup still builds,
 //! but can't install anything, which is enough for checks and working on its UI.
 
 use std::path::{Path, PathBuf};
@@ -89,8 +93,9 @@ fn archive(dir: &Path) -> Vec<u8> {
     builder.into_inner().expect("finishing the archive")
 }
 
-/// The app's folder for macOS and Linux.
-fn pack_folder(variable: &str) {
+/// A folder (the app's on macOS and Linux, the OBS plugin's) into
+/// `OUT_DIR/<name>`, its unpacked size through `<size_env>`.
+fn pack_folder(variable: &str, name: &str, size_env: &str) {
     println!("cargo:rerun-if-env-changed={variable}");
     let (payload, size) = match std::env::var_os(variable).filter(|path| !path.is_empty()) {
         Some(path) => {
@@ -101,13 +106,17 @@ fn pack_folder(variable: &str) {
         }
         None => (Vec::new(), 0),
     };
-    std::fs::write(out("payload.zst"), payload).expect("writing the payload");
-    println!("cargo:rustc-env=UWUPULSE_SETUP_PAYLOAD_SIZE={size}");
+    std::fs::write(out(name), payload).expect("writing the payload");
+    println!("cargo:rustc-env={size_env}={size}");
 }
 
 fn main() {
     if std::env::var("CARGO_CFG_TARGET_FAMILY").as_deref() == Ok("unix") {
-        pack_folder("UWUPULSE_SETUP_PAYLOAD");
+        pack_folder(
+            "UWUPULSE_SETUP_PAYLOAD",
+            "payload.zst",
+            "UWUPULSE_SETUP_PAYLOAD_SIZE",
+        );
     } else {
         pack_file(
             "UWUPULSE_SETUP_PAYLOAD",
@@ -115,6 +124,11 @@ fn main() {
             "UWUPULSE_SETUP_PAYLOAD_SIZE",
         );
     }
+    pack_folder(
+        "UWUPULSE_SETUP_OBS_PAYLOAD",
+        "obs.zst",
+        "UWUPULSE_SETUP_OBS_PAYLOAD_SIZE",
+    );
     // The setup usually runs from Downloads, next to whatever else was
     // downloaded: linked DLLs come from System32 only, never from the setup's
     // own folder.

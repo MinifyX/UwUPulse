@@ -5,6 +5,10 @@
 //! desktop if wanted), and registry entries under `HKEY_CURRENT_USER`. No
 //! administrator rights are needed.
 //!
+//! The OBS plugin, when picked, goes to `%ProgramData%\obs-studio\plugins`
+//! (`obs.rs`), the one folder OBS 31 loads plugins from that needs no
+//! administrator; the registry notes it next to the app.
+//!
 //! `UWUPULSE_SETUP_SANDBOX=<folder>` redirects all of it (files, shortcuts,
 //! registry under `HKCU\Software\UwUPulse-Setup-Sandbox`) for testing.
 
@@ -16,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use winreg::enums::{HKEY_CURRENT_USER, KEY_READ};
 use winreg::RegKey;
 
+use crate::obs::{self, Obs};
 use crate::system;
 
 pub const APP_EXE: &str = "UwUPulse.exe";
@@ -38,6 +43,16 @@ pub fn has_payload() -> bool {
 pub struct Options {
     pub dir: String,
     pub desktop_shortcut: bool,
+    /// Install (or update) the desktop app. Left alone when not picked.
+    #[serde(default = "yes")]
+    pub app: bool,
+    /// Install (or update) the OBS plugin. Left alone when not picked.
+    #[serde(default)]
+    pub obs: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -55,6 +70,7 @@ pub struct Layout {
     pub roaming_data: PathBuf,
     pub local_data: PathBuf,
     registry_prefix: String,
+    pub obs: Obs,
     pub sandbox: bool,
 }
 
@@ -71,6 +87,7 @@ impl Layout {
                     roaming_data: folders.roaming.join(APP_ID),
                     local_data: folders.local.join(APP_ID),
                     registry_prefix: String::new(),
+                    obs: Obs::real(),
                     sandbox: false,
                 }
             }
@@ -90,6 +107,7 @@ impl Layout {
                     .map(|name| name.to_string_lossy().into_owned())
                     .unwrap_or_default()
             ),
+            obs: Obs::sandbox(root),
             sandbox: true,
         }
     }
@@ -125,9 +143,23 @@ impl Layout {
         })
     }
 
-    /// Options from the last install, or the defaults.
+    /// The OBS plugin the setup installed, if it is still there.
+    pub fn obs_installed(&self) -> Option<obs::Installed> {
+        let key = self.open(SETUP_KEY)?;
+        let dir = key.get_value::<String, _>("ObsPlugin").ok()?;
+        Path::new(&dir).exists().then(|| obs::Installed {
+            dir,
+            version: key.get_value("ObsVersion").unwrap_or_default(),
+        })
+    }
+
+    /// Options from the last install, or the defaults: the app unless only
+    /// the plugin was installed, the plugin if it was or OBS is there.
     pub fn remembered_options(&self) -> Options {
         let key = self.open(SETUP_KEY);
+        let app = key.is_none() || self.installed().is_some();
+        let obs_wanted =
+            obs::has_payload() && (self.obs_installed().is_some() || self.obs.detected());
         let flag = |name: &str, default: bool| {
             key.as_ref()
                 .and_then(|k| k.get_value::<u32, _>(name).ok())
@@ -140,6 +172,8 @@ impl Layout {
         Options {
             dir,
             desktop_shortcut: flag("DesktopShortcut", true),
+            app,
+            obs: obs_wanted,
         }
     }
 }
@@ -261,10 +295,20 @@ pub fn install(
     version: &str,
     progress: Progress,
 ) -> Result<(), String> {
+    if !options.app && !options.obs {
+        return Err("Please pick the desktop app, the OBS plugin or both.".into());
+    }
+    // The uninstaller and the registry entry live here even when only the
+    // plugin is installed: that is how it comes off again.
     let dir = PathBuf::from(options.dir.trim());
     if !dir.is_absolute() {
         return Err("Please pick a full folder path.".into());
     }
+    let split = match (options.app, options.obs) {
+        (true, true) => 0.85,
+        (true, false) => 1.0,
+        _ => 0.0,
+    };
     progress(Step::Prepare, 0.0);
     let existed = dir.exists();
     std::fs::create_dir_all(&dir).map_err(|e| format!("Couldn't create {}: {e}", dir.display()))?;
@@ -278,13 +322,27 @@ pub fn install(
     {
         system::restrict_to_user(&dir)?;
     }
-    stop_app(layout, &dir)?;
+    if options.app {
+        stop_app(layout, &dir)?;
+    }
     progress(Step::Prepare, 1.0);
 
     let app = dir.join(APP_EXE);
-    let incoming = dir.join("UwUPulse.exe.new");
-    extract(PAYLOAD, PAYLOAD_SIZE, &incoming, progress)?;
-    replace_file(&incoming, &app)?;
+    if options.app {
+        let incoming = dir.join("UwUPulse.exe.new");
+        extract(PAYLOAD, PAYLOAD_SIZE, &incoming, &mut |step, f| {
+            progress(step, f * split)
+        })?;
+        replace_file(&incoming, &app)?;
+    }
+    // OBS may be open: it keeps the plugin it loaded until it restarts.
+    let plugin = if options.obs {
+        Some(layout.obs.install(version, &mut |f| {
+            progress(Step::Copy, split + f * (1.0 - split))
+        })?)
+    } else {
+        layout.obs_installed()
+    };
 
     let uninstaller = dir.join(UNINSTALL_EXE);
     let me =
@@ -296,30 +354,53 @@ pub fn install(
     }
 
     progress(Step::Shortcuts, 0.0);
-    let shortcut = system::Shortcut {
-        target: &app,
-        arguments: "",
-        description: "UwUPulse",
-        app_id: APP_ID,
-    };
-    system::create_shortcut(&layout.start_menu.join(SHORTCUT), &shortcut)?;
-    let on_desktop = layout.desktop.join(SHORTCUT);
-    if options.desktop_shortcut {
-        system::create_shortcut(&on_desktop, &shortcut)?;
-    } else {
-        let _ = std::fs::remove_file(&on_desktop);
+    if options.app {
+        let shortcut = system::Shortcut {
+            target: &app,
+            arguments: "",
+            description: "UwUPulse",
+            app_id: APP_ID,
+        };
+        system::create_shortcut(&layout.start_menu.join(SHORTCUT), &shortcut)?;
+        let on_desktop = layout.desktop.join(SHORTCUT);
+        if options.desktop_shortcut {
+            system::create_shortcut(&on_desktop, &shortcut)?;
+        } else {
+            let _ = std::fs::remove_file(&on_desktop);
+        }
     }
     progress(Step::Shortcuts, 1.0);
 
     progress(Step::Register, 0.0);
-    register(layout, &dir, options, version)?;
+    register(layout, &dir, options, version, plugin.as_ref())?;
     progress(Step::Register, 1.0);
     progress(Step::Done, 1.0);
     Ok(())
 }
 
-fn register(layout: &Layout, dir: &Path, options: &Options, version: &str) -> Result<(), String> {
+fn register(
+    layout: &Layout,
+    dir: &Path,
+    options: &Options,
+    version: &str,
+    plugin: Option<&obs::Installed>,
+) -> Result<(), String> {
     let app = dir.join(APP_EXE);
+    // Only the plugin this time, next to an app from before: the app's
+    // version and shortcut choice stay what they were.
+    let app_before = !options.app && app.exists();
+    let before = layout.open(SETUP_KEY);
+    let kept_version = app_before
+        .then(|| before.as_ref()?.get_value::<String, _>("Version").ok())
+        .flatten();
+    let kept_shortcut = app_before
+        .then(|| before.as_ref()?.get_value::<u32, _>("DesktopShortcut").ok())
+        .flatten();
+    let icon = if app.exists() {
+        app.clone()
+    } else {
+        dir.join(UNINSTALL_EXE)
+    };
     let uninstaller = dir.join(UNINSTALL_EXE);
     let write = |key: &RegKey, name: &str, value: &str| {
         key.set_value(name, &value)
@@ -336,7 +417,7 @@ fn register(layout: &Layout, dir: &Path, options: &Options, version: &str) -> Re
     write(&entry, "DisplayName", "UwUPulse")?;
     write(&entry, "DisplayVersion", version)?;
     write(&entry, "Publisher", "UwUPulse")?;
-    write(&entry, "DisplayIcon", &format!("{},0", app.display()))?;
+    write(&entry, "DisplayIcon", &format!("{},0", icon.display()))?;
     write(&entry, "InstallLocation", &dir.display().to_string())?;
     write(
         &entry,
@@ -351,8 +432,26 @@ fn register(layout: &Layout, dir: &Path, options: &Options, version: &str) -> Re
 
     let setup = layout.create(SETUP_KEY)?;
     write(&setup, "InstallDir", &dir.display().to_string())?;
-    write(&setup, "Version", version)?;
-    write_dword(&setup, "DesktopShortcut", options.desktop_shortcut.into())?;
+    write(
+        &setup,
+        "Version",
+        kept_version.as_deref().unwrap_or(version),
+    )?;
+    write_dword(
+        &setup,
+        "DesktopShortcut",
+        kept_shortcut.unwrap_or(options.desktop_shortcut.into()),
+    )?;
+    match plugin {
+        Some(plugin) => {
+            write(&setup, "ObsPlugin", &plugin.dir)?;
+            write(&setup, "ObsVersion", &plugin.version)?;
+        }
+        None => {
+            let _ = setup.delete_value("ObsPlugin");
+            let _ = setup.delete_value("ObsVersion");
+        }
+    }
     Ok(())
 }
 
@@ -372,6 +471,7 @@ pub fn uninstall(
     progress(Step::Shortcuts, 1.0);
 
     progress(Step::Register, 0.0);
+    let plugin = layout.obs_installed();
     layout.remove_tree(UNINSTALL_KEY);
     layout.remove_tree(r"Software\UwUPulse");
     progress(Step::Register, 1.0);
@@ -392,6 +492,7 @@ pub fn uninstall(
         }
     }
     let _ = std::fs::remove_dir(dir);
+    layout.obs.uninstall(plugin.as_ref(), keep_data)?;
     progress(Step::Copy, 1.0);
 
     if !keep_data {
@@ -443,6 +544,46 @@ mod tests {
         let options = sandbox.layout.remembered_options();
         assert!(options.dir.ends_with(r"Programs\UwUPulse"));
         assert!(options.desktop_shortcut);
+        assert!(options.app);
+    }
+
+    #[test]
+    fn notes_the_plugin_next_to_the_app() {
+        let sandbox = Sandbox::new();
+        let layout = &sandbox.layout;
+        let dir = layout.default_dir.clone();
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(APP_EXE), b"app").unwrap();
+        let mut options = Options {
+            dir: dir.display().to_string(),
+            desktop_shortcut: false,
+            app: true,
+            obs: false,
+        };
+        register(layout, &dir, &options, "1.0.0", None).unwrap();
+        assert!(layout.obs_installed().is_none());
+
+        // Later only the plugin: the app keeps its version.
+        let plugin_dir = layout.obs.plugin_dir();
+        std::fs::create_dir_all(&plugin_dir).unwrap();
+        let plugin = obs::Installed {
+            dir: plugin_dir.display().to_string(),
+            version: "1.1.0".into(),
+        };
+        options.app = false;
+        options.obs = true;
+        options.desktop_shortcut = true;
+        register(layout, &dir, &options, "1.1.0", Some(&plugin)).unwrap();
+        assert_eq!(layout.obs_installed(), Some(plugin));
+        assert_eq!(
+            layout.installed().unwrap().version.as_deref(),
+            Some("1.0.0")
+        );
+        assert!(!layout.remembered_options().desktop_shortcut);
+        assert!(layout.remembered_options().obs);
+
+        uninstall(layout, &dir, true, &mut |_, _| {}).unwrap();
+        assert!(!plugin_dir.exists(), "uninstalling removes the plugin");
     }
 
     #[test]
@@ -456,8 +597,10 @@ mod tests {
         let options = Options {
             dir: dir.display().to_string(),
             desktop_shortcut: false,
+            app: true,
+            obs: false,
         };
-        register(layout, &dir, &options, "0.1.0").unwrap();
+        register(layout, &dir, &options, "0.1.0", None).unwrap();
 
         let installed = layout.installed().unwrap();
         assert_eq!(installed.version.as_deref(), Some("0.1.0"));

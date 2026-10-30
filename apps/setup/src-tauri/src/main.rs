@@ -5,6 +5,8 @@ mod app;
 #[cfg_attr(windows, path = "install.rs")]
 #[cfg_attr(unix, path = "install_unix.rs")]
 mod install;
+mod obs;
+mod payload;
 #[cfg_attr(windows, path = "system.rs")]
 #[cfg_attr(unix, path = "system_unix.rs")]
 mod system;

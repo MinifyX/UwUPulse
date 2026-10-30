@@ -138,6 +138,14 @@ const PLATFORMS = [
     file: 'UwUPulse-update-linux-x64.AppImage',
     sign: { 'linux-x86_64': `UwUPulse-Setup-${version}-linux-x64.AppImage` },
   },
+  // The OBS plugin on its own, unsigned: the setups above carry it too, inside
+  // what the updater signature covers. With --build-windows the x64 zip still
+  // comes from CI.
+  { artifact: 'installers-windows-x64', file: 'UwUPulse-obs-windows-x64.zip' },
+  { artifact: 'installers-windows-arm64', file: 'UwUPulse-obs-windows-arm64.zip' },
+  { artifact: 'installers-macos-universal', file: 'UwUPulse-obs-macos-universal.zip' },
+  { artifact: 'installers-linux-x64', file: 'UwUPulse-obs-linux-x64.tar.gz' },
+  { artifact: 'installers-linux-x64', file: 'UwUPulse-obs-linux-x64.deb' },
 ].filter((entry) => !windowsOnly || entry.file === windowsName);
 
 console.log(`\n▸ Checking UwUPulse ${version}`);
@@ -409,6 +417,19 @@ function releaseBody(aurLive) {
       'Linux portable',
       `${code('UwUPulse-linux-x64-portable.tar.gz')} · ARM: ${code('…-arm64-portable.tar.gz')}`,
     ],
+    [
+      'OBS-Plugin (OBS 31+), ohne Setup',
+      'OBS plugin (OBS 31+), without the setup',
+      [
+        'UwUPulse-obs-windows-x64.zip',
+        'UwUPulse-obs-windows-arm64.zip',
+        'UwUPulse-obs-macos-universal.zip',
+        'UwUPulse-obs-linux-x64.tar.gz',
+        'UwUPulse-obs-linux-x64.deb',
+      ]
+        .map(code)
+        .join(' · '),
+    ],
   ].filter(([, , files]) => {
     const named = [...files.matchAll(/`(UwUPulse-[^`]+)`/g)].map((m) => m[1]);
     return named.length === 0 ? !windowsOnly : named.every(has);
@@ -428,6 +449,7 @@ function releaseBody(aurLive) {
       ? []
       : [
           'Linux: `.deb` und `.rpm` installieren systemweit und aktualisieren sich selbst (fragt nach dem Administrator-Passwort); die portable Version einfach entpacken und `./UwUPulse/uwupulse` starten, sie aktualisiert sich nicht.',
+          'OBS-Plugin: Die Setups für Windows, macOS und Linux (x64) bieten es gleich mit an und halten es aktuell. Von Hand: den Ordner aus der `.zip` bzw. `.tar.gz` in den Plugin-Ordner von OBS kopieren (siehe `plugins/obs/README.md`), oder unter Ubuntu/Debian `UwUPulse-obs-linux-x64.deb` installieren.',
         ]),
   ];
   const en = [
@@ -442,6 +464,7 @@ function releaseBody(aurLive) {
       ? []
       : [
           "Linux: the `.deb` and `.rpm` install system-wide and update themselves (asking for the administrator password); the portable one you just unpack and start with `./UwUPulse/uwupulse`, and it doesn't update itself.",
+          "OBS plugin: the setups for Windows, macOS and Linux (x64) offer it as well and keep it up to date. By hand: copy the folder from the `.zip` or `.tar.gz` into OBS's plugin folder (see `plugins/obs/README.md`), or install `UwUPulse-obs-linux-x64.deb` on Ubuntu/Debian.",
         ]),
   ];
   return [

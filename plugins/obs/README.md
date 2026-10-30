@@ -56,7 +56,7 @@ sudo add-apt-repository ppa:obsproject/obs-studio
 sudo apt install obs-studio libsimde-dev qt6-base-dev qt6-base-private-dev libdbus-1-dev pkg-config
 ```
 
-CI (`.github/workflows/obs-plugin.yml`) builds every platform on each push and pull request. Each run uploads these unsigned artifacts:
+CI (`.github/workflows/obs-plugin.yml`) builds every platform on each pull request, and on main as part of the Installers run (`installers.yml` calls it, and the setups take the plugin from there instead of building it again). Each run uploads these unsigned artifacts:
 
 | Artifact | Contents |
 |---|---|
@@ -67,7 +67,30 @@ CI (`.github/workflows/obs-plugin.yml`) builds every platform on each push and p
 
 Each artifact is a `.tar.gz` of the folder listed.
 
-## Layout and installation
+## Installation
+
+The easy way is the **UwUPulse setup** (`UwUPulse-windows-<arch>-setup.exe`, `UwUPulse-macos-universal.dmg`, and on Linux x64 the setup the app updates with). It offers two components, **Desktop app** and **OBS plugin**. The plugin is preselected when OBS Studio is found:
+
+- macOS: `/Applications/OBS.app` or the plugins folder;
+- Windows: the OBS registry entry, `C:\Program Files\obs-studio` or `%ProgramData%\obs-studio`;
+- Linux: `obs` in the PATH or `/usr/share/obs`.
+
+Without OBS it still installs the plugin, which loads the next time OBS starts. OBS Studio 31 or newer is required. The setup never closes OBS: if OBS is open, restart it afterwards. The setup notes the plugin in its install record (`install.json`, or the registry on Windows). An update of UwUPulse updates the plugin too, if it was installed, and uninstalling removes it (its data only when you don't keep it).
+
+Releases also carry the plugin on its own, unsigned:
+
+| File | What to do |
+|---|---|
+| `UwUPulse-obs-windows-x64.zip`, `UwUPulse-obs-windows-arm64.zip` | copy `uwupulse\` to `%ProgramData%\obs-studio\plugins\` |
+| `UwUPulse-obs-macos-universal.zip` | copy `uwupulse.plugin` to `~/Library/Application Support/obs-studio/plugins/` |
+| `UwUPulse-obs-linux-x64.tar.gz` | unpack into `~/.config/obs-studio/plugins/` |
+| `UwUPulse-obs-linux-x64.deb` | `sudo apt install ./UwUPulse-obs-linux-x64.deb` (package `uwupulse-obs`, system paths, needs `obs-studio` 31+ from the OBS PPA) |
+
+Install it only one way: the per-user copy and the `.deb` together would give OBS the module twice.
+
+There is no plugin for Linux on ARM, so the setup there offers only the app.
+
+## Layout
 
 What `cmake --install` produces:
 
@@ -105,3 +128,5 @@ The plugin's source code is MIT, like the rest of UwUPulse. The built plugin lin
 - **Linux and OBS versions.** Linux builds against the OBS version from the PPA, which is always the newest one. libobs refuses to register a source whose `obs_source_info` is larger than the one it knows. So a plugin built against a newer OBS may fail to register its overlay source on an older OBS (the dock still works). Distribution packages should be built against the OBS version they ship.
 - **Flatpak OBS** loads plugins only as Flatpak extensions. That packaging does not exist yet.
 - **Signing.** The macOS bundle and the Windows DLL are unsigned.
+- **Windows.** OBS 31 loads plugins only from `%ProgramData%` (no per-user folder), so the setup writes there; without the right to, it says so. While OBS is open, Windows may keep the old DLL locked: the setup then asks to close OBS and try again.
+- **No `.rpm` of the plugin** yet; on Fedora/openSUSE use the `.tar.gz` (or the setup).

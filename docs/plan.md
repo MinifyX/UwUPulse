@@ -181,7 +181,9 @@ Ein eigener Desktop in OBS Studio (ab 31): eigener Schlüssel, eigene Kopplungen
 - Dock „UwUPulse“: die React-UI über obs-browser (QCef) unter `ui_url()`; ohne obs-browser (z. B. Wayland) ein Knopf, der sie im Systembrowser öffnet.
 - Quelle `uwupulse_overlay`: Widget-Auswahl, Breite/Höhe, intern eine private `browser_source` auf die Overlay-URL.
 - BLE nur unter Windows und Linux: OBS.app hat keine `NSBluetoothAlwaysUsageDescription`.
-- Build: `pnpm build:obs` (`plugins/obs/scripts/build.mjs`), CI `obs-plugin.yml` → Artefakte `uwupulse-obs-{windows-x64,windows-arm64,macos-universal,linux-x64}`. Details und Installationspfade: `plugins/obs/README.md`.
+- Build: `pnpm build:obs` (`plugins/obs/scripts/build.mjs`), CI `obs-plugin.yml` (auf main von `installers.yml` aufgerufen, bei PRs allein) → Artefakte `uwupulse-obs-{windows-x64,windows-arm64,macos-universal,linux-x64}`. Details und Installationspfade: `plugins/obs/README.md`.
+- Setup: Komponenten „Desktop-App“ und „OBS-Plugin“ (vorausgewählt, wenn OBS gefunden wird). Das Plugin steckt als `obs.zst` im Setup (`UWUPULSE_SETUP_OBS_PAYLOAD`, nicht unter Linux arm64) und wird in den Install-Zustand eingetragen (`install.json` Feld `obs`, Registry `ObsPlugin`/`ObsVersion`). Ziel: Windows `%ProgramData%\obs-studio\plugins\uwupulse`, macOS `~/Library/Application Support/obs-studio/plugins/uwupulse.plugin`, Linux `~/.config/obs-studio/plugins/uwupulse`. Updates erneuern es nur, wenn es installiert ist; Deinstallieren entfernt es. OBS wird nie beendet, nur ein Neustart-Hinweis. Im Dock (`HostInfo.updater = false`) verweist die Update-Karte auf den Setup.
+- Release: zusätzlich `UwUPulse-obs-{windows-x64,windows-arm64,macos-universal}.zip`, `UwUPulse-obs-linux-x64.tar.gz` und `UwUPulse-obs-linux-x64.deb` (Paket `uwupulse-obs`, Systempfade).
 
 ### WidgetConfig
 ```ts
@@ -226,7 +228,7 @@ Große BPM-Anzeige, Start/Stopp, Status „gespiegelt zum iPhone“. Startbar vo
 - [x] iOS-/watchOS-App (Simulator-Build; HealthKit-Mirroring, BLE, Bonjour und QR auf echten Geräten noch ungetestet)
 - [x] CI, Release-Workflows, README
 - [x] Suite-Installer (`apps/setup`) und Release-Pipeline: `installers.yml` baut unsigniert, `pnpm release` signiert die Update-Dateien, veröffentlicht das Release, die Feeds (`updates`-Branch) und AUR `uwupulse-bin`
-- [x] OBS-Plugin (`plugins/obs`): Dock, Overlay-Quelle, CI für Windows x64/ARM64, macOS universal, Linux x64 (Einbindung ins Setup offen)
+- [x] OBS-Plugin (`plugins/obs`): Dock, Overlay-Quelle, CI für Windows x64/ARM64, macOS universal, Linux x64, im Setup installier- und aktualisierbar, eigene Release-Downloads (.zip/.tar.gz/.deb)
 - [ ] Erstes Release per `pnpm release` (Update-Schlüssel, Branch `updates` entsteht dabei)
 - [x] Security-Review (docs/security-review-2026-10.md)
 - [ ] Erster Test mit echter Watch, iPhone und Desktop

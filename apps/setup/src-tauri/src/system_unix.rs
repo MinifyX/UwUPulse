@@ -17,6 +17,11 @@ pub fn processes_under(dir: &Path) -> Vec<i32> {
         .collect()
 }
 
+/// The executables of every running process.
+pub fn executables() -> Vec<PathBuf> {
+    running().into_iter().map(|(_, exe)| exe).collect()
+}
+
 /// Process ids and their executables. Linux has them in /proc; macOS gives
 /// the full path of the executable as `comm` in `ps`.
 #[cfg(target_os = "linux")]

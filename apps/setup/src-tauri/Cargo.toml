@@ -18,15 +18,16 @@ serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
+# The OBS plugin (and on macOS and Linux the app) arrives as a folder packed
+# as tar (build.rs, payload.rs).
+tar = "0.4"
 # The setup page's private WebView data folder (app.rs).
 tempfile = "3"
 zstd = "0.13"
 
-# macOS and Linux: the app arrives as a folder (an .app, an AppDir) packed as
-# tar, and processes are found and ended through the C library.
+# macOS and Linux: processes are found and ended through the C library.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
-tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"

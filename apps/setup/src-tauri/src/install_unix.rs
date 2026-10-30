@@ -15,13 +15,17 @@
 //! UwUPulse's updater reads too: an app installed some other way — a `.deb`, a
 //! copy dragged out of a disk image — is not one the setup updates.
 //!
+//! The OBS plugin, when picked, goes where OBS loads one user's plugins
+//! (`obs.rs`), and is noted in `install.json` too.
+//!
 //! `UWUPULSE_SETUP_SANDBOX=<folder>` redirects all of it for testing.
 
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::obs::{self, Obs};
+use crate::payload::{self, remove_tree, swap_in};
 use crate::system;
 
 #[cfg(target_os = "macos")]
@@ -40,8 +44,6 @@ const SETUP_ID: &str = "app.uwupulse.setup";
 /// The app in a tar archive (see `build.rs`).
 static PAYLOAD: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/payload.zst"));
 const PAYLOAD_SIZE: &str = env!("UWUPULSE_SETUP_PAYLOAD_SIZE");
-/// The compressor's window, which the decompressor has to allow.
-const WINDOW_LOG: u32 = 28;
 
 pub fn has_payload() -> bool {
     !PAYLOAD.is_empty()
@@ -52,6 +54,16 @@ pub fn has_payload() -> bool {
 pub struct Options {
     pub dir: String,
     pub desktop_shortcut: bool,
+    /// Install (or update) the desktop app. Left alone when not picked.
+    #[serde(default = "yes")]
+    pub app: bool,
+    /// Install (or update) the OBS plugin. Left alone when not picked.
+    #[serde(default)]
+    pub obs: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -65,9 +77,14 @@ pub struct Installed {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Record {
+    /// The app's folder; UwUPulse's updater reads it. When only the plugin
+    /// was ever installed, the folder the app would go to.
     dir: String,
     version: String,
     desktop_shortcut: bool,
+    /// The OBS plugin, if the setup installed it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    obs: Option<obs::Installed>,
 }
 
 /// Where things go on this machine.
@@ -82,6 +99,7 @@ pub struct Layout {
     desktop: PathBuf,
     /// Everything UwUPulse keeps: removed on request.
     data: Vec<PathBuf>,
+    pub obs: Obs,
     pub sandbox: bool,
 }
 
@@ -120,6 +138,7 @@ impl Layout {
             applications: PathBuf::new(),
             desktop: PathBuf::new(),
             data,
+            obs: Obs::real(),
             sandbox: false,
         }
     }
@@ -140,6 +159,7 @@ impl Layout {
             applications: data_home.join("applications"),
             desktop: system::desktop_dir(),
             data,
+            obs: Obs::real(),
             sandbox: false,
         }
     }
@@ -151,6 +171,7 @@ impl Layout {
             applications: root.join("Applications"),
             desktop: root.join("Desktop"),
             data: vec![root.join("Data").join(APP_ID)],
+            obs: Obs::sandbox(root),
             sandbox: true,
         }
     }
@@ -178,16 +199,31 @@ impl Layout {
         })
     }
 
-    /// Options from the last install, or the defaults.
+    /// The OBS plugin the setup installed, if it is still there.
+    pub fn obs_installed(&self) -> Option<obs::Installed> {
+        self.record()?
+            .obs
+            .filter(|plugin| Path::new(&plugin.dir).exists())
+    }
+
+    /// Options from the last install, or the defaults: the app unless only
+    /// the plugin was installed, the plugin if it was or OBS is there.
     pub fn remembered_options(&self) -> Options {
+        let app = self.installed().is_some();
+        let obs_wanted =
+            obs::has_payload() && (self.obs_installed().is_some() || self.obs.detected());
         match self.record() {
             Some(record) => Options {
                 dir: record.dir,
                 desktop_shortcut: record.desktop_shortcut,
+                app,
+                obs: obs_wanted,
             },
             None => Options {
                 dir: self.default_dir.display().to_string(),
                 desktop_shortcut: !cfg!(target_os = "macos"),
+                app: true,
+                obs: obs_wanted,
             },
         }
     }
@@ -253,66 +289,9 @@ pub fn launch(layout: &Layout, dir: &Path) -> Result<(), String> {
     }
 }
 
-/// A reader that tells how far it got.
-struct Counting<'a, R> {
-    inner: R,
-    read: u64,
-    report: &'a mut dyn FnMut(u64),
-}
-
-impl<R: Read> Read for Counting<'_, R> {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        let n = self.inner.read(buf)?;
-        self.read += n as u64;
-        (self.report)(self.read);
-        Ok(n)
-    }
-}
-
-/// Unpack the app into `staging`, reporting progress over the copy step.
-fn unpack(staging: &Path, progress: Progress) -> Result<(), String> {
-    if PAYLOAD.is_empty() {
-        return Err("This setup was built without UwUPulse inside (a development build).".into());
-    }
-    let damaged = |e: std::io::Error| format!("The packed app is damaged: {e}");
-    let total: u64 = PAYLOAD_SIZE.parse().unwrap_or(1).max(1);
-    let mut decoder = zstd::Decoder::new(PAYLOAD).map_err(damaged)?;
-    decoder.window_log_max(WINDOW_LOG).map_err(damaged)?;
-    let mut report = |read: u64| progress(Step::Copy, read.min(total) as f64 / total as f64);
-    let counting = Counting {
-        inner: decoder,
-        read: 0,
-        report: &mut report,
-    };
-    let mut archive = tar::Archive::new(counting);
-    archive.set_preserve_permissions(true);
-    archive.set_preserve_mtime(false);
-    archive.set_overwrite(true);
-    for entry in archive.entries().map_err(damaged)? {
-        let mut entry = entry.map_err(damaged)?;
-        let top = entry
-            .path()
-            .map_err(damaged)?
-            .components()
-            .next()
-            .map(|part| part.as_os_str().to_string_lossy().into_owned())
-            .unwrap_or_default();
-        if top != APP {
-            return Err(format!("The packed app holds something unexpected: {top}"));
-        }
-        // `unpack_in` keeps every entry inside `staging`: absolute paths and
-        // `..` in an archive are refused rather than followed.
-        let placed = entry
-            .unpack_in(staging)
-            .map_err(|e| format!("Couldn't unpack {top}: {e}"))?;
-        if !placed {
-            return Err(format!("The packed app tried to write outside {top}."));
-        }
-    }
-    if !staging.join(APP).is_dir() {
-        return Err(format!("The packed app has no {APP} in it."));
-    }
-    Ok(())
+/// Unpack the app into `staging`, reporting progress over 0..1.
+fn unpack(staging: &Path, progress: &mut dyn FnMut(f64)) -> Result<(), String> {
+    payload::unpack(PAYLOAD, PAYLOAD_SIZE, APP, "app", staging, progress)
 }
 
 /// Unpacks everything into `dir` (which must not exist yet) and checks that
@@ -323,7 +302,7 @@ pub fn check_payload(dir: &Path) -> Result<String, String> {
         return Err(format!("{} exists already.", dir.display()));
     }
     std::fs::create_dir_all(dir).map_err(|e| format!("Couldn't create {}: {e}", dir.display()))?;
-    unpack(dir, &mut |_, _| {})?;
+    unpack(dir, &mut |_| {})?;
     // macOS: the one program in Contents/MacOS; Linux: the AppDir's AppRun.
     let path = if cfg!(target_os = "macos") {
         let programs = dir.join(APP).join("Contents/MacOS");
@@ -341,42 +320,28 @@ pub fn check_payload(dir: &Path) -> Result<String, String> {
     if meta.permissions().mode() & 0o111 == 0 {
         return Err(format!("{} is not executable.", path.display()));
     }
-    Ok(format!("ok  {} ({} bytes)", path.display(), meta.len()))
-}
-
-/// Puts `incoming` where `target` is, and what was there before away. The old
-/// version is moved aside first, so a failure leaves one of the two in place.
-fn swap_in(incoming: &Path, target: &Path) -> Result<(), String> {
-    let aside = target.with_extension(format!("old-{}", std::process::id()));
-    let had_old = std::fs::symlink_metadata(target).is_ok();
-    if had_old {
-        std::fs::rename(target, &aside)
-            .map_err(|e| format!("Couldn't move the old {} aside: {e}", target.display()))?;
+    let mut report = format!("ok  {} ({} bytes)", path.display(), meta.len());
+    // The OBS plugin, where there is one: its library where OBS looks.
+    if obs::has_payload() {
+        let plugins = dir.join("obs");
+        std::fs::create_dir_all(&plugins)
+            .map_err(|e| format!("Couldn't create {}: {e}", plugins.display()))?;
+        let plugin = Obs::sandbox(&plugins);
+        plugin.install("check", &mut |_| {})?;
+        let library = if cfg!(target_os = "macos") {
+            plugin.plugin_dir().join("Contents/MacOS/uwupulse")
+        } else {
+            plugin.plugin_dir().join("bin/64bit/uwupulse.so")
+        };
+        let meta = std::fs::metadata(&library)
+            .map_err(|e| format!("{} is missing: {e}", library.display()))?;
+        report.push_str(&format!(
+            "\nok  {} ({} bytes)",
+            library.display(),
+            meta.len()
+        ));
     }
-    if let Err(e) = std::fs::rename(incoming, target) {
-        if had_old {
-            let _ = std::fs::rename(&aside, target);
-        }
-        return Err(format!("Couldn't put {} in place: {e}", target.display()));
-    }
-    if had_old {
-        remove_tree(&aside);
-    }
-    Ok(())
-}
-
-/// Removes a folder UwUPulse owns. A symlink in its place is only unlinked,
-/// never followed.
-fn remove_tree(path: &Path) {
-    match std::fs::symlink_metadata(path) {
-        Ok(meta) if meta.is_dir() => {
-            let _ = std::fs::remove_dir_all(path);
-        }
-        Ok(_) => {
-            let _ = std::fs::remove_file(path);
-        }
-        Err(_) => {}
-    }
+    Ok(report)
 }
 
 pub fn install(
@@ -385,35 +350,68 @@ pub fn install(
     version: &str,
     progress: Progress,
 ) -> Result<(), String> {
+    if !options.app && !options.obs {
+        return Err("Please pick the desktop app, the OBS plugin or both.".into());
+    }
     let dir = PathBuf::from(options.dir.trim());
-    if !dir.is_absolute() {
+    if options.app && !dir.is_absolute() {
         return Err("Please pick a full folder path.".into());
     }
+    let before = layout.record();
+    // The copy step: the app, then the plugin, by their usual sizes.
+    let split = match (options.app, options.obs) {
+        (true, true) => 0.8,
+        (true, false) => 1.0,
+        _ => 0.0,
+    };
+
     progress(Step::Prepare, 0.0);
-    std::fs::create_dir_all(&dir).map_err(|e| format!("Couldn't create {}: {e}", dir.display()))?;
-    stop_app(layout, &dir)?;
-    // Unpacked next to where it goes, so the final move is a rename on the
-    // same disk, never a copy.
-    let staging = dir.join(format!(".uwupulse-setup-{}", std::process::id()));
-    remove_tree(&staging);
-    std::fs::create_dir_all(&staging)
-        .map_err(|e| format!("Couldn't create {}: {e}", staging.display()))?;
+    if options.app {
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("Couldn't create {}: {e}", dir.display()))?;
+        stop_app(layout, &dir)?;
+        // Unpacked next to where it goes, so the final move is a rename on
+        // the same disk, never a copy.
+        let staging = dir.join(format!(".uwupulse-setup-{}", std::process::id()));
+        remove_tree(&staging);
+        std::fs::create_dir_all(&staging)
+            .map_err(|e| format!("Couldn't create {}: {e}", staging.display()))?;
+        progress(Step::Prepare, 1.0);
+        let result = unpack(&staging, &mut |f| progress(Step::Copy, f * split))
+            .and_then(|()| swap_in(&staging.join(APP), &dir.join(APP)));
+        remove_tree(&staging);
+        result?;
+    }
     progress(Step::Prepare, 1.0);
 
-    let result =
-        unpack(&staging, progress).and_then(|()| swap_in(&staging.join(APP), &dir.join(APP)));
-    remove_tree(&staging);
-    result?;
+    // OBS may be open: it keeps the plugin it loaded until it restarts.
+    let plugin = if options.obs {
+        Some(layout.obs.install(version, &mut |f| {
+            progress(Step::Copy, split + f * (1.0 - split))
+        })?)
+    } else {
+        before.as_ref().and_then(|record| record.obs.clone())
+    };
 
     progress(Step::Shortcuts, 0.0);
-    shortcuts(layout, &dir, options)?;
+    if options.app {
+        shortcuts(layout, &dir, options)?;
+    }
     progress(Step::Shortcuts, 1.0);
 
     progress(Step::Register, 0.0);
-    let record = Record {
-        dir: dir.display().to_string(),
-        version: version.to_string(),
-        desktop_shortcut: options.desktop_shortcut,
+    let record = match before {
+        // The app stays as it was.
+        Some(before) if !options.app => Record {
+            obs: plugin,
+            ..before
+        },
+        _ => Record {
+            dir: dir.display().to_string(),
+            version: version.to_string(),
+            desktop_shortcut: options.desktop_shortcut,
+            obs: plugin,
+        },
     };
     if let Some(parent) = layout.state.parent() {
         std::fs::create_dir_all(parent)
@@ -560,6 +558,7 @@ pub fn uninstall(
     progress(Step::Shortcuts, 1.0);
 
     progress(Step::Register, 0.0);
+    let plugin = layout.record().and_then(|record| record.obs);
     let _ = std::fs::remove_file(&layout.state);
     if let Some(parent) = layout.state.parent() {
         let _ = std::fs::remove_dir(parent);
@@ -579,6 +578,7 @@ pub fn uninstall(
     if !cfg!(target_os = "macos") {
         let _ = std::fs::remove_dir(dir);
     }
+    layout.obs.uninstall(plugin.as_ref(), keep_data)?;
     progress(Step::Copy, 1.0);
 
     if !keep_data {
@@ -623,23 +623,79 @@ mod tests {
     }
 
     #[test]
-    fn swapping_keeps_one_version_in_place() {
-        let sandbox = Sandbox::new();
-        let dir = sandbox.layout.default_dir.clone();
-        let target = dir.join(APP);
-        let incoming = dir.join("incoming");
-        std::fs::create_dir_all(&target).unwrap();
-        std::fs::write(target.join("old"), b"old").unwrap();
-        std::fs::create_dir_all(&incoming).unwrap();
-        std::fs::write(incoming.join("new"), b"new").unwrap();
-        swap_in(&incoming, &target).unwrap();
-        assert!(target.join("new").exists());
-        assert!(!target.join("old").exists());
-        assert_eq!(
-            std::fs::read_dir(&dir).unwrap().count(),
-            1,
-            "nothing left aside"
+    fn reads_a_record_from_before_the_obs_plugin() {
+        let record: Record = serde_json::from_str(
+            r#"{"dir":"/Applications","version":"1.0.0","desktopShortcut":false}"#,
+        )
+        .unwrap();
+        assert_eq!(record.obs, None);
+        let json = serde_json::to_string(&record).unwrap();
+        assert!(
+            !json.contains("obs"),
+            "the 1.0 updater reads it too: {json}"
         );
+    }
+
+    #[test]
+    fn the_plugin_alone_leaves_the_app_as_it_was() {
+        let sandbox = Sandbox::new();
+        let layout = &sandbox.layout;
+        let dir = layout.default_dir.clone();
+        // An app the setup installed before.
+        std::fs::create_dir_all(dir.join(APP)).unwrap();
+        std::fs::create_dir_all(layout.state.parent().unwrap()).unwrap();
+        let before = Record {
+            dir: dir.display().to_string(),
+            version: "1.0.0".into(),
+            desktop_shortcut: false,
+            obs: None,
+        };
+        std::fs::write(&layout.state, serde_json::to_vec(&before).unwrap()).unwrap();
+        let options = Options {
+            dir: "/elsewhere".into(),
+            desktop_shortcut: true,
+            app: false,
+            obs: true,
+        };
+        let result = install(layout, &options, "1.1.0", &mut |_, _| {});
+        if !obs::has_payload() {
+            assert!(result.unwrap_err().contains("without the OBS plugin"));
+            return;
+        }
+        result.unwrap();
+        let record = layout.record().unwrap();
+        assert_eq!(record.dir, before.dir, "the updater still finds the app");
+        assert_eq!(record.version, "1.0.0");
+        let plugin = layout.obs_installed().unwrap();
+        assert_eq!(PathBuf::from(&plugin.dir), layout.obs.plugin_dir());
+        assert_eq!(plugin.version, "1.1.0");
+        assert!(layout.remembered_options().obs, "picked again next time");
+        assert!(layout.remembered_options().app);
+
+        uninstall(layout, &dir, true, &mut |_, _| {}).unwrap();
+        assert!(!layout.obs.plugin_dir().exists(), "uninstalling removes it");
+    }
+
+    #[test]
+    fn nothing_picked_is_refused() {
+        let sandbox = Sandbox::new();
+        let options = Options {
+            dir: sandbox.layout.default_dir.display().to_string(),
+            desktop_shortcut: false,
+            app: false,
+            obs: false,
+        };
+        assert!(install(&sandbox.layout, &options, "1.1.0", &mut |_, _| {}).is_err());
+    }
+
+    #[test]
+    fn the_plugin_is_preselected_once_obs_is_there() {
+        let sandbox = Sandbox::new();
+        let layout = &sandbox.layout;
+        assert!(!layout.remembered_options().obs);
+        std::fs::create_dir_all(sandbox._dir.path().join("OBS/obs-studio")).unwrap();
+        assert_eq!(layout.remembered_options().obs, obs::has_payload());
+        assert!(layout.remembered_options().app);
     }
 
     #[test]
@@ -653,6 +709,8 @@ mod tests {
         let options = Options {
             dir: dir.display().to_string(),
             desktop_shortcut: true,
+            app: true,
+            obs: false,
         };
         shortcuts(layout, &dir, &options).unwrap();
         #[cfg(not(target_os = "macos"))]
@@ -670,6 +728,7 @@ mod tests {
                 dir: options.dir.clone(),
                 version: "0.1.0".into(),
                 desktop_shortcut: true,
+                obs: None,
             })
             .unwrap(),
         )

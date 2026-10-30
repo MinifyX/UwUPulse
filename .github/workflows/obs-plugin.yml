@@ -4,16 +4,12 @@ name: OBS plugin
 # Windows x64 and ARM64, macOS universal, Linux x64. Each job leaves the
 # plugin folder as OBS loads it, packed as uwupulse-obs-<platform>.tar.gz, in
 # the artifact uwupulse-obs-<platform>. Unsigned, no secrets.
+#
+# On main (and ci/**) installers.yml calls it: the setups carry the plugin,
+# and the plugin is built once for both. Pull requests run it on its own.
 
 on:
-  push:
-    branches:
-      - main
-      - 'ci/**'
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      - 'apple/**'
+  workflow_call:
   pull_request:
     paths-ignore:
       - 'docs/**'
@@ -24,9 +20,12 @@ on:
 permissions:
   contents: read
 
+# Called by installers.yml, github.workflow is the caller's, and the caller's
+# own group would wait for itself: there, a group per run (installers.yml
+# decides about cancelling). Pull requests cancel their previous run.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: obs-plugin-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'

@@ -64,6 +64,7 @@
   "Textgröße": "Text size",
   "Update-Kanal": "Update channel",
   "Updates": "Updates",
+  "Updates über den UwUPulse-Setup: Lade die neue Version herunter und starte ihn, er bringt das OBS-Plugin mit auf den neuesten Stand.": "Updates through the UwUPulse setup: download the new version and run it, and it brings the OBS plugin up to date.",
   "UwUPulse lädt neue Versionen still herunter und installiert sie beim nächsten Start. Jedes Update ist signiert und wird vor dem Start geprüft.": "UwUPulse quietly downloads new versions and installs them on the next start. Every update is signed and checked before it runs.",
   "Zusätzlich zur Textgröße des Systems.": "On top of the system's text size.",
   "{version} installieren": "Install {version}",

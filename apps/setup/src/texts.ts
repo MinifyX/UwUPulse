@@ -14,6 +14,19 @@ const de = {
   folder: 'Speicherort',
   change: 'Ändern …',
   desktopShortcut: 'Verknüpfung auf dem Desktop',
+  components: 'Was darf es sein?',
+  componentApp: 'Desktop-App',
+  componentAppHint: 'UwUPulse als eigenes Fenster, mit Overlay für jede Streaming-App.',
+  componentObs: 'OBS-Plugin',
+  componentObsHint: 'UwUPulse direkt in OBS Studio, als Dock und als Quelle.',
+  obsMissing:
+    'OBS Studio nicht gefunden – das Plugin wird trotzdem installiert und beim nächsten OBS-Start geladen. Es braucht OBS Studio 31 oder neuer.',
+  obsRunning: 'OBS Studio ist gerade offen. Starte es danach neu, dann lädt es das Plugin.',
+  obsDoneBody: 'Das OBS-Plugin ist bereit. In OBS findest du UwUPulse unter Docks und als Quelle.',
+  obsRestart: 'Starte OBS Studio neu, damit es das neue Plugin lädt.',
+  updateDoneObsBody:
+    'Das OBS-Plugin ist jetzt auf {version}. Starte OBS Studio neu, falls es offen ist.',
+  uninstallObs: 'Das OBS-Plugin entferne ich gleich mit.',
   runningTitle: 'UwUPulse ist gerade offen',
   runningBody:
     'Ich schließe es kurz, damit ich weitermachen kann. Das Overlay pausiert so lange, eine laufende Aufzeichnung wird beendet.',
@@ -80,6 +93,18 @@ const en: typeof de = {
   folder: 'Location',
   change: 'Change …',
   desktopShortcut: 'Shortcut on the desktop',
+  components: 'What would you like?',
+  componentApp: 'Desktop app',
+  componentAppHint: 'UwUPulse in its own window, with an overlay for any streaming app.',
+  componentObs: 'OBS plugin',
+  componentObsHint: 'UwUPulse right inside OBS Studio, as a dock and a source.',
+  obsMissing:
+    'OBS Studio not found – the plugin is installed anyway and loads the next time OBS starts. It needs OBS Studio 31 or newer.',
+  obsRunning: 'OBS Studio is open right now. Restart it afterwards and it loads the plugin.',
+  obsDoneBody: 'The OBS plugin is ready. In OBS, UwUPulse is under Docks and as a source.',
+  obsRestart: 'Restart OBS Studio so it loads the new plugin.',
+  updateDoneObsBody: 'The OBS plugin is now at {version}. Restart OBS Studio if it is open.',
+  uninstallObs: "I'll remove the OBS plugin along with it.",
   runningTitle: 'UwUPulse is open right now',
   runningBody:
     "I'll close it for a moment so I can carry on. The overlay pauses meanwhile, and a running recording ends.",

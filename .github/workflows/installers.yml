@@ -3,7 +3,9 @@ name: Installers
 # The workspace checks on macOS (ci.yml covers Linux), and next to
 # them, not after them, every file `pnpm release` publishes: the Windows setups
 # for x64 and ARM, the universal macOS disk image, and .deb, .rpm and portable
-# folder for Linux x64 and arm64. `pnpm release` takes the run for the commit
+# folder for Linux x64 and arm64. The setups carry the OBS plugin, built by
+# obs-plugin.yml in the same run (job `obs`); each setup builds its app first
+# and only then waits for its plugin, so the two builds overlap. `pnpm release` takes the run for the commit
 # it releases, once all of it finished green. All unsigned: nothing here holds
 # the update signing key or any other secret. The files the updater runs are
 # signed by `pnpm release`, next to the key, after it downloads them from here.
@@ -42,6 +44,12 @@ env:
   APPIMAGE_EXTRACT_AND_RUN: '1'
 
 jobs:
+  obs:
+    name: OBS plugin
+    uses: ./.github/workflows/obs-plugin.yml
+    permissions:
+      contents: read
+
   check:
     name: Check (${{ matrix.os }})
     strategy:
@@ -124,7 +132,11 @@ jobs:
             target: aarch64-pc-windows-msvc
             rust-targets: aarch64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      # Reads the OBS plugin's artifact from this run while it is running.
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -161,6 +173,9 @@ jobs:
         shell: bash
         env:
           TARGET: ${{ matrix.target }}
+          # No plugin for Linux on ARM.
+          UWUPULSE_OBS_ARTIFACT: ${{ matrix.name != 'linux-arm64' && format('uwupulse-obs-{0}', matrix.name) || '' }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           if [ -n "$TARGET" ]; then
             node scripts/build-setup.mjs --target "$TARGET"
@@ -190,10 +205,14 @@ jobs:
               lipo "$app"/Contents/MacOS/* -verify_arch arm64 x86_64
               echo "signed, universal: $app"
             done
+            plugin=$(find "$check/obs" -path '*uwupulse.plugin/Contents/MacOS/uwupulse')
+            lipo "$plugin" -verify_arch arm64 x86_64
+            echo "OBS plugin, universal: $plugin"
           else
             setup=target/installers/UwUPulse-update-linux-x64.AppImage
             "$setup" --check-payload "$check"
             ldd "$check/UwUPulse/usr/bin/"* | grep "not found" && exit 1 || echo "every library found"
+            find "$check/obs" -path '*uwupulse/bin/64bit/uwupulse.so' | grep -q .
           fi
 
       # The .deb installs through dpkg as package `uwupulse` (what the app checks
@@ -227,6 +246,22 @@ jobs:
           test -f "$portable/UwUPulse/README.txt"
           LD_LIBRARY_PATH="$portable/UwUPulse/usr/lib" ldd "$portable/UwUPulse/usr/bin/uwupulse-desktop" \
             | grep "not found" && exit 1 || echo "every library found"
+
+      # The OBS plugin on its own: a folder for ~/.config/obs-studio/plugins and
+      # package uwupulse-obs in the system's paths. Not installed: it needs OBS
+      # 31 from the OBS PPA, which this Ubuntu doesn't have.
+      - name: Check the OBS plugin downloads
+        if: matrix.name == 'linux-x64'
+        shell: bash
+        run: |
+          set -e
+          test "$(tar -tzf target/installers/UwUPulse-obs-linux-x64.tar.gz | cut -d/ -f1 | sort -u)" = uwupulse
+          tar -tzf target/installers/UwUPulse-obs-linux-x64.tar.gz | grep -qx uwupulse/bin/64bit/uwupulse.so
+          deb=target/installers/UwUPulse-obs-linux-x64.deb
+          test "$(dpkg-deb -f "$deb" Package)" = uwupulse-obs
+          dpkg-deb -f "$deb" Depends | grep -q 'obs-studio (>= 31)'
+          dpkg-deb -c "$deb" | grep -q ' ./usr/lib/x86_64-linux-gnu/obs-plugins/uwupulse.so$'
+          dpkg-deb -c "$deb" | grep -q ' ./usr/share/obs/obs-plugins/uwupulse/locale/en-US.ini$'
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

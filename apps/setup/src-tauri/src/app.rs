@@ -14,7 +14,7 @@ use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder
 use tauri_plugin_dialog::DialogExt;
 
 use crate::install::{self, Installed, Layout, Options, Step};
-use crate::system;
+use crate::{obs, system};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -80,6 +80,8 @@ struct Info {
     /// `windows`, `macos` or `linux`: the page words a few things differently
     /// and offers a desktop shortcut only where there is such a thing.
     platform: &'static str,
+    /// The OBS plugin: packed in here, OBS found, installed.
+    obs: obs::Info,
 }
 
 #[derive(Clone, Serialize)]
@@ -124,6 +126,7 @@ fn info(setup: State<'_, Setup>) -> Info {
         sandbox: setup.layout.sandbox,
         relaunch: matches!(setup.mode, Mode::Update { relaunch: true, .. }),
         platform: PLATFORM,
+        obs: setup.layout.obs.info(setup.layout.obs_installed()),
     }
 }
 
@@ -194,11 +197,14 @@ impl Drop for BusyGuard<'_> {
 }
 
 #[tauri::command]
-async fn install(app: AppHandle, options: Options) -> Result<(), String> {
+async fn install(app: AppHandle, mut options: Options) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let setup = app.state::<Setup>();
         let _busy = guard(&setup)?;
         if let Mode::Update { wait_pid, .. } = setup.mode {
+            // An update brings along what is installed, nothing more.
+            options.app = setup.layout.installed().is_some();
+            options.obs = obs::has_payload() && setup.layout.obs_installed().is_some();
             crate::versions::check_not_older(
                 setup.layout.installed().and_then(|i| i.version).as_deref(),
                 VERSION,
@@ -252,11 +258,14 @@ fn begin_uninstall(setup: State<'_, Setup>) -> Result<(), String> {
     if cfg!(windows) {
         return Err("On Windows, UwUPulse is removed from Installed apps.".into());
     }
-    let dir = setup
-        .layout
-        .installed()
-        .map(|installed| PathBuf::from(installed.dir))
-        .ok_or("UwUPulse isn't installed.")?;
+    let dir = match setup.layout.installed() {
+        Some(installed) => PathBuf::from(installed.dir),
+        // Only the OBS plugin.
+        None if setup.layout.obs_installed().is_some() => {
+            PathBuf::from(setup.layout.remembered_options().dir)
+        }
+        None => return Err("UwUPulse isn't installed.".into()),
+    };
     *setup.uninstall_dir_override.lock().unwrap() = Some(dir);
     Ok(())
 }
