@@ -13,6 +13,7 @@ Texte für App Store Connect (App-ID 6828874328). Sprachen: Englisch (Primär), 
 | Support-URL | https://github.com/MinifyX/UwUPulse/issues |
 | Marketing-URL | https://uwu.minifyx.de/#uwupulse |
 | Copyright | 2026 MinifyX |
+| Apple-Silicon-Mac / Vision Pro | aus (nur iPhone + Watch; am Mac gibt es die Desktop-App) |
 | App-Datenschutz | „Keine Daten erfasst“ (nichts verlässt das lokale Netz, kein Entwickler-Server) |
 | Exportkonformität | Verschlüsselung nur zwischen eigenen Geräten des Nutzers (X25519 und ChaCha20-Poly1305 aus Apples CryptoKit) → nach Kategorie 5 Teil 2, Note 3 (Massenmarkt) ausgenommen; `ITSAppUsesNonExemptEncryption = false` passt |
 | Review-Hinweis | siehe unten |
