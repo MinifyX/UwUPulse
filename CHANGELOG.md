@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
+- OBS Studio plugin (OBS 31+): UwUPulse runs directly inside OBS, no desktop app needed. Your iPhone or a BLE chest strap connects straight to OBS; the dock brings the full UwUPulse interface (pairing, overlay editor with custom CSS, recording, local API) and the new UwUPulse overlay source drops your heart rate into any scene. Runs alongside the desktop app with its own port, pairing and data. Windows x64/ARM64, macOS (universal), Linux x64.
 - OBS plugin in the setup: choose Desktop app and/or OBS plugin (preselected when OBS Studio is found). Updates keep the plugin current, uninstalling removes it. OBS is never closed; the setup asks for a restart instead.
 - Releases carry the OBS plugin on its own: .zip for Windows x64/ARM64 and macOS, .tar.gz and a `uwupulse-obs` .deb for Linux x64.
 - The dock inside OBS points to the setup for updates.

@@ -5430,7 +5430,7 @@ dependencies = [
 
 [[package]]
 name = "uwupulse-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -5460,7 +5460,7 @@ dependencies = [
 
 [[package]]
 name = "uwupulse-desktop"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "log",
@@ -5486,7 +5486,7 @@ dependencies = [
 
 [[package]]
 name = "uwupulse-obs"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "log",
  "parking_lot",
@@ -5498,7 +5498,7 @@ dependencies = [
 
 [[package]]
 name = "uwupulse-proto"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "chacha20poly1305",
@@ -5515,7 +5515,7 @@ dependencies = [
 
 [[package]]
 name = "uwupulse-setup"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "getrandom 0.3.4",
  "libc",
