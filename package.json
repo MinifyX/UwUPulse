@@ -12,6 +12,7 @@
     "tauri": "pnpm --filter @uwupulse/desktop tauri",
     "build": "pnpm --filter @uwupulse/desktop build",
     "build:setup": "node scripts/build-setup.mjs",
+    "build:obs": "node plugins/obs/scripts/build.mjs",
     "release": "node scripts/release.mjs",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --if-present test",

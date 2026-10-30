@@ -5485,6 +5485,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "uwupulse-obs"
+version = "1.0.0"
+dependencies = [
+ "log",
+ "parking_lot",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "uwupulse-core",
+]
+
+[[package]]
 name = "uwupulse-proto"
 version = "1.0.0"
 dependencies = [

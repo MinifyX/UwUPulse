@@ -1,0 +1,2 @@
+_obs_module_*
+_obs_current_module

@@ -1,0 +1,48 @@
+{
+  "obs-studio": {
+    "version": "31.1.1",
+    "url": "https://github.com/obsproject/obs-studio/archive/refs/tags/31.1.1.tar.gz",
+    "sha256": "39751f067bacc13d44b116c5138491b5f1391f91516d3d590d874edd21292291"
+  },
+  "obs-browser": {
+    "commit": "bdabf8300ecefeb566b81f4a7ff75f8a8e21f62b",
+    "url": "https://raw.githubusercontent.com/obsproject/obs-browser/bdabf8300ecefeb566b81f4a7ff75f8a8e21f62b/panel/browser-panel.hpp",
+    "sha256": "d88f281decbd66a58644e27078531a5a514a75aada4fcc154ad315bb5823890d"
+  },
+  "prebuilt": {
+    "version": "2025-07-11",
+    "baseUrl": "https://github.com/obsproject/obs-deps/releases/download/2025-07-11",
+    "files": {
+      "macos": {
+        "name": "macos-deps-2025-07-11-universal.tar.xz",
+        "sha256": "495687e63383d1a287684b6e2e9bfe246bb8f156fe265926afb1a325af1edd2a"
+      },
+      "windows-x64": {
+        "name": "windows-deps-2025-07-11-x64.zip",
+        "sha256": "c8c642c1070dc31ce9a0f1e4cef5bb992f4bff4882255788b5da12129e85caa7"
+      },
+      "windows-arm64": {
+        "name": "windows-deps-2025-07-11-arm64.zip",
+        "sha256": "f581cc61e8f734a8b12d485fc8662a408ca59d222814e4b37bce115bd442fb04"
+      }
+    }
+  },
+  "qt6": {
+    "version": "2025-07-11",
+    "baseUrl": "https://github.com/obsproject/obs-deps/releases/download/2025-07-11",
+    "files": {
+      "macos": {
+        "name": "macos-deps-qt6-2025-07-11-universal.tar.xz",
+        "sha256": "d3f5f04b6ea486e032530bdf0187cbda9a54e0a49621a4c8ba984c5023998867"
+      },
+      "windows-x64": {
+        "name": "windows-deps-qt6-2025-07-11-x64.zip",
+        "sha256": "0e76bf0555dd5382838850b748d3dcfab44a1e1058441309ab54e1a65b156d0a"
+      },
+      "windows-arm64": {
+        "name": "windows-deps-qt6-2025-07-11-arm64.zip",
+        "sha256": "7aab240504931f32ea8e8d208a912a0d6ddbd78c16858f2e559c7c9b29ab9326"
+      }
+    }
+  }
+}

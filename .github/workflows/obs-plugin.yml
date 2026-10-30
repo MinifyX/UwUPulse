@@ -1,0 +1,143 @@
+name: OBS plugin
+
+# The UwUPulse OBS plugin (plugins/obs) for every platform OBS runs it on:
+# Windows x64 and ARM64, macOS universal, Linux x64. Each job leaves the
+# plugin folder as OBS loads it, packed as uwupulse-obs-<platform>.tar.gz, in
+# the artifact uwupulse-obs-<platform>. Unsigned, no secrets.
+
+on:
+  push:
+    branches:
+      - main
+      - 'ci/**'
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'apple/**'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'apple/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # The dock's page, built once for all four plugins.
+  ui:
+    name: Frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Every `uses:` is pinned to a commit, with the version in the comment.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @uwupulse/desktop...
+      - run: pnpm --filter @uwupulse/desktop build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: obs-ui
+          path: apps/desktop/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  plugin:
+    name: Plugin (${{ matrix.name }})
+    needs: ui
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Intel and Apple silicon, both built on Apple silicon and joined.
+          - name: macos-universal
+            os: macos-latest
+            platform: macos
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - name: windows-x64
+            os: windows-latest
+            platform: windows-x64
+            rust-targets: ''
+          # Natively on ARM, nothing cross-linked.
+          - name: windows-arm64
+            os: windows-11-arm
+            platform: windows-arm64
+            rust-targets: ''
+          # Against OBS from the OBS PPA, like obs-plugintemplate.
+          - name: linux-x64
+            os: ubuntu-24.04
+            platform: linux
+            rust-targets: ''
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: SDK folder
+        shell: bash
+        run: echo "UWUPULSE_OBS_DEPS=${{ runner.temp }}/obs-deps" >> "$GITHUB_ENV"
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo add-apt-repository --yes ppa:obsproject/obs-studio
+          sudo apt-get update
+          # libdbus-1-dev: BlueZ, for chest straps at this computer.
+          sudo apt-get install -y --no-install-recommends obs-studio qt6-base-dev \
+            qt6-base-private-dev libdbus-1-dev pkg-config
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: obs-ui
+          path: apps/desktop/dist
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.rust-targets }}
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: obs-${{ matrix.name }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # libobs and obs-frontend-api built from the pinned OBS sources, Qt 6:
+      # rebuilt only when buildspec.json or deps.cmake change.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ env.UWUPULSE_OBS_DEPS }}
+          key: obs-deps-${{ matrix.name }}-${{ hashFiles('plugins/obs/buildspec.json', 'plugins/obs/cmake/deps.cmake') }}
+
+      - name: Build
+        run: node plugins/obs/scripts/build.mjs --platform ${{ matrix.platform }} --skip-ui
+
+      - name: Pack
+        shell: bash
+        run: tar -czf "target/obs/uwupulse-obs-${{ matrix.name }}.tar.gz" -C "target/obs/${{ matrix.platform }}" .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: uwupulse-obs-${{ matrix.name }}
+          path: target/obs/uwupulse-obs-${{ matrix.name }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14

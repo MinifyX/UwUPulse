@@ -173,6 +173,16 @@ Aus, solange der Host `PulseOptions::ui = Some(UiOptions { dir, host })` nicht s
 - Geheimnis pro Start (32 Byte hex): Header `X-UwUPulse-UI` bzw. `?s=` beim WebSocket, Origin fehlt oder ist `http://127.0.0.1:<port>`/`http://localhost:<port>`. `Pulse::ui_url()` liefert `http://127.0.0.1:<port>/ui/#s=<secret>`; das Frontend erkennt daran (Pfad `/ui/`, `#s=`) das HTTP-Backend (`lib/httpBackend.ts`).
 - Mehrere Hubs pro Rechner sind erlaubt: eigenes Datenverzeichnis, eigener Port (`PulseOptions::default_port`), eigener Gerätename für Bonjour.
 
+### OBS-Plugin (`plugins/obs`, `crates/uwupulse-obs`)
+
+Ein eigener Desktop in OBS Studio (ab 31): eigener Schlüssel, eigene Kopplungen und Widgets im Plugin-Konfigordner (`obs_module_config_path`), Port 8747 (App: 8746), Bonjour-Name „UwUPulse OBS (<Rechner>)“. Läuft neben der App, das iPhone koppelt beide getrennt.
+
+- `crates/uwupulse-obs`: Staticlib mit C-ABI (`include/uwupulse_obs.h`) um `Pulse` mit `/ui`; der C++-Teil liefert Log, Link öffnen (`QDesktopServices`), Datei speichern (`QFileDialog`) und „geändert“ zurück.
+- Dock „UwUPulse“: die React-UI über obs-browser (QCef) unter `ui_url()`; ohne obs-browser (z. B. Wayland) ein Knopf, der sie im Systembrowser öffnet.
+- Quelle `uwupulse_overlay`: Widget-Auswahl, Breite/Höhe, intern eine private `browser_source` auf die Overlay-URL.
+- BLE nur unter Windows und Linux: OBS.app hat keine `NSBluetoothAlwaysUsageDescription`.
+- Build: `pnpm build:obs` (`plugins/obs/scripts/build.mjs`), CI `obs-plugin.yml` → Artefakte `uwupulse-obs-{windows-x64,windows-arm64,macos-universal,linux-x64}`. Details und Installationspfade: `plugins/obs/README.md`.
+
 ### WidgetConfig
 ```ts
 interface WidgetConfig {
@@ -216,6 +226,7 @@ Große BPM-Anzeige, Start/Stopp, Status „gespiegelt zum iPhone“. Startbar vo
 - [x] iOS-/watchOS-App (Simulator-Build; HealthKit-Mirroring, BLE, Bonjour und QR auf echten Geräten noch ungetestet)
 - [x] CI, Release-Workflows, README
 - [x] Suite-Installer (`apps/setup`) und Release-Pipeline: `installers.yml` baut unsigniert, `pnpm release` signiert die Update-Dateien, veröffentlicht das Release, die Feeds (`updates`-Branch) und AUR `uwupulse-bin`
+- [x] OBS-Plugin (`plugins/obs`): Dock, Overlay-Quelle, CI für Windows x64/ARM64, macOS universal, Linux x64 (Einbindung ins Setup offen)
 - [ ] Erstes Release per `pnpm release` (Update-Schlüssel, Branch `updates` entsteht dabei)
 - [x] Security-Review (docs/security-review-2026-10.md)
 - [ ] Erster Test mit echter Watch, iPhone und Desktop

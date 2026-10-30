@@ -91,6 +91,10 @@ pub struct PulseOptions {
     /// HTTP (`/ui/rpc`, `/ui/events`), for a host without a webview of its
     /// own. Off (`None`) in the desktop app.
     pub ui: Option<UiOptions>,
+    /// Chest straps at this desktop (with the `ble` feature). A host turns it
+    /// off where touching Bluetooth would end the process: macOS kills an app
+    /// whose Info.plist has no `NSBluetoothAlwaysUsageDescription` (OBS).
+    pub ble: bool,
 }
 
 /// The `/ui` transport (see [`PulseOptions::ui`]).
@@ -124,6 +128,7 @@ impl PulseOptions {
             app_version: env!("CARGO_PKG_VERSION").to_owned(),
             header_timeout: Duration::from_secs(10),
             ui: None,
+            ble: true,
         }
     }
 }
@@ -212,6 +217,7 @@ impl Pulse {
             link_attempts: Mutex::new(Default::default()),
             pre_auth: Mutex::new(Default::default()),
             bonjour: opts.bonjour,
+            ble_allowed: opts.ble,
             advert: Mutex::new(None),
             ticker: Mutex::new(None),
             ui: opts.ui.map(|ui| hub::UiState {
@@ -368,6 +374,9 @@ impl Pulse {
     // --- BLE ---------------------------------------------------------------
 
     pub async fn ble_set_scanning(&self, on: bool) -> Result<(), Error> {
+        if !self.0.ble_allowed {
+            return Err(Error::Unavailable);
+        }
         #[cfg(feature = "ble")]
         return ble::set_scanning(&self.0, on).await;
         #[cfg(not(feature = "ble"))]
@@ -385,6 +394,9 @@ impl Pulse {
     }
 
     pub async fn ble_connect(&self, id: &str) -> Result<(), Error> {
+        if !self.0.ble_allowed {
+            return Err(Error::Unavailable);
+        }
         #[cfg(feature = "ble")]
         return ble::connect(&self.0, id);
         #[cfg(not(feature = "ble"))]
@@ -562,6 +574,12 @@ impl Pulse {
             log::error!("ending the session failed: {e}");
         }
     }
+}
+
+/// This computer's name as phones see it when no `device_name` is set:
+/// the host name without `.local`.
+pub fn host_name() -> String {
+    desktop_name()
 }
 
 fn new_token() -> String {

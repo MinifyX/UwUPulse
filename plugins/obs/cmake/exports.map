@@ -1,0 +1,7 @@
+{
+  global:
+    obs_module_*;
+    obs_current_module;
+  local:
+    *;
+};

@@ -118,6 +118,8 @@ pub(crate) struct Inner {
     pub link_attempts: Mutex<HashMap<IpAddr, (Instant, u32)>>,
     pub pre_auth: Mutex<PreAuthCount>,
     pub bonjour: bool,
+    /// [`crate::PulseOptions::ble`].
+    pub ble_allowed: bool,
     pub advert: Mutex<Option<crate::mdns::Advert>>,
     pub ticker: Mutex<Option<tokio::task::JoinHandle<()>>>,
     /// `/ui/`: only when the host asked for it.
