@@ -20,7 +20,7 @@ Texte für App Store Connect (App-ID 6828874328). Sprachen: Englisch (Primär), 
 ## English
 
 **Name** (≤30): `UwUPulse`
-**Subtitle** (≤30): `Your heart rate, live on stream`
+**Subtitle** (≤30): `Your heart rate live on stream`
 **Promotional text** (≤170):
 > Send your heart rate from Apple Watch or a Bluetooth chest strap straight to your computer: OBS overlay, recording and a local API. No cloud, no account.
 
