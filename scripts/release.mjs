@@ -207,6 +207,8 @@ if (build) {
 }
 
 const work = mkdtempSync(join(tmpdir(), 'uwupulse-release-'));
+// fail() exits from anywhere, so the cleanup hangs on exit rather than on the happy path.
+process.on('exit', () => rmSync(work, { recursive: true, force: true }));
 try {
   const files = new Map(localWindows ? [[windowsName, windowsSetup]] : []);
   if (!windowsOnly) {
