@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "notes": "{\"de\":\"First release.\\n\\n- Apple Watch heart rate via a workout session mirrored to the iPhone, relayed to the desktop over an end-to-end encrypted local link.\\n- Pairing by QR code or six-digit code comparison.\\n- BLE chest straps on the iPhone or directly on the desktop.\\n- OBS overlays with five presets, a live editor, colour zones and custom CSS.\\n- Session recording (SQLite) with graphs and CSV/JSON export.\\n- Local REST and WebSocket API with token.\\n- UwUSuite design on desktop, iPhone and Apple Watch: UwU Sans, suite colours, Nyu, new app icon.\\n- Desktop appearance settings (font, contrast, motion, text size), macOS menu and close-to-hide.\\n- UwUPulse Setup for Windows, macOS and Linux with signed in-app updates; .deb, .rpm, portable and AUR packages.\",\"en\":\"First release.\\n\\n- Apple Watch heart rate via a workout session mirrored to the iPhone, relayed to the desktop over an end-to-end encrypted local link.\\n- Pairing by QR code or six-digit code comparison.\\n- BLE chest straps on the iPhone or directly on the desktop.\\n- OBS overlays with five presets, a live editor, colour zones and custom CSS.\\n- Session recording (SQLite) with graphs and CSV/JSON export.\\n- Local REST and WebSocket API with token.\\n- UwUSuite design on desktop, iPhone and Apple Watch: UwU Sans, suite colours, Nyu, new app icon.\\n- Desktop appearance settings (font, contrast, motion, text size), macOS menu and close-to-hide.\\n- UwUPulse Setup for Windows, macOS and Linux with signed in-app updates; .deb, .rpm, portable and AUR packages.\"}",
+  "pub_date": "2026-10-30T16:35:33Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0o2VzBEcmNWbVFPa1ZtU0MxbklxcnNXWlJYNVdXaEx6aG02U2NFeXpydGJXb2tqMHJDdkF5WkJhK2duaytqcmFjekx0TzJqZTVRWFZ2YnJ0dmNwTHdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTcxCWZpbGU6VXdVUHVsc2UtU2V0dXAtMS4wLjAuZXhlCitrOUtEOTJpSjQyaFN4Ni9mTktQTnlqV1dnd0pjZFBaajZscjd6cmFQNkEwZzg4VlZBeFRnTVRuTUdNRy9IRmt2S1lwVW5hY1lNNmhBUWxEUEtUV0RnPT0K",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-windows-x64-setup.exe"
+    },
+    "windows-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c09RY2dwTGJ1czRDWHBrNlhBUy9sR1pCL1pLZHNrSjlCZUVQeWd3emhIejhjaVRncDczMDFUK3l3VnpjcldvVGZscDYwaUFIdWtiTjZTWFZFZXhOSGc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTcxCWZpbGU6VXdVUHVsc2UtU2V0dXAtMS4wLjAtd2luZG93cy1hcm02NC5leGUKMTBqV2pDNitYb1NNVGEyUTNSWnhnVE5NSWFLT0RzOStnamVBYWJKd2NkWUQxdndnbzBpNVM5Si9URzhzK3NTcG5jWFdXN054NzhvR2FPQi94aENIQ1E9PQo=",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-windows-arm64-setup.exe"
+    },
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0lvTDgxeWpFMjFmKzhxT01RazVqNEdDNEZsRnVGYXp0RlRCTnNEV2Z6a3BzenQwdEViQmkveEpaWkJlV2cvdEQ4V3dJNnVOOXBOWEFXKzQ3RTRGSGc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTcyCWZpbGU6VXdVUHVsc2UtU2V0dXAtMS4wLjAtbWFjb3MtYXJtNjQtdXBkYXRlCkFnVjRobE5UYWdFNWtTSENyOGtNZE83M3ZlSEtUVDVaclFxYWpRanZ5UmVHZUwvUmZiUTNyeTJmbFNIWDJxYUFRTytmWXdaaTBxR2x2c01Ed0NaRkNRPT0K",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-update-macos-universal"
+    },
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0VwSER5MGhqMjFxSFdtVm1DSFpNei9qa2dkcWMyZ1FPOHNraEFIUWVJUlQvVGVEWVZmMGFLdnV5dksxbjBJdFltTEcrV1dvVkQ2N0JjSHFwR1daY2cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTcyCWZpbGU6VXdVUHVsc2UtU2V0dXAtMS4wLjAtbWFjb3MteDY0LXVwZGF0ZQo4ZzNYWWpvajF3QTVhYWlMeUV2SStKd3Vqc2hCZ2h2RWJSeWxuaUc0UkRsRnhveVpZUk1jS0dkMVgrRmFQaTFnd2JaTnB3Q0tNOTNxWE9uK3VObUxEZz09Cg==",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-update-macos-universal"
+    },
+    "linux-x86_64-deb": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0NXcWZpbjRrcVgzVWtHbHMxUnVMRjhMNTl2WkNQYm5ZVk9QTVJyNEh1ZXdjK3lmazBGVk4zUDFPOWp0UUFVWTlHR2lCUWptUUt1VWl5SjkxZlo2Y2dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTcyCWZpbGU6VXdVUHVsc2UtMS4wLjAtbGludXgteDg2XzY0LmRlYgpvVWVSUUZFbzA3aXZvcld3RmxFV2Q0bzcxVkJwWDIyeTZJUGIyVXlyM2NIOUJaYWEwWHpzUFhUNE1xUGxQN2dCcmhEL2F1cnBNSHVBbUFtV0tsZy9Bdz09Cg==",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-linux-x64.deb"
+    },
+    "linux-x86_64-rpm": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c1A5eUNydmdqcCthQnFLNUdwZjNNS2kreXE0QkdDSXYvZVJKQmFhaFYzMGtYdlN3SWp5aHNad0JuRGdIRWpOZFYzTWlsdE1mL2x4d2I5djlBQmhncFFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTcyCWZpbGU6VXdVUHVsc2UtMS4wLjAtbGludXgteDg2XzY0LnJwbQptSWRxalcweGg5cTlFbU91VDdaY3Yva3RPT0JFelVNUzRVc0lDR1ZwL1E5ek4wVHBwQTA0OFF2T1N4WVVXWk5EbmZEOG9ubDJnNSs2S2p2dTlXSURCZz09Cg==",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-linux-x64.rpm"
+    },
+    "linux-aarch64-deb": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0l5NGJzVHpoSVBLY1ZncCtxV1VyYWJ6c0dRVnVjRFlSc1RhbFg4dHU1YVBYUU4ydVZCYmFOWlZZZXBhZUdLVTJJZG02UG5PVEd5NzIrMHJWKzhJVFFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTczCWZpbGU6VXdVUHVsc2UtMS4wLjAtbGludXgtYWFyY2g2NC5kZWIKc2doNjJMb2lRSTE5QStMT1hWa253cEtlMjFWTCtveCs3UnFZK1RPN21jOG9tSzBUekVZNkxxMytweUJ4dnFIQU1GMWpmVDNLbENUcndxZkcxcFZRQUE9PQo=",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-linux-arm64.deb"
+    },
+    "linux-aarch64-rpm": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0RXaTRhbFBqdysrWFFuNGF0MTVrYldSSWRBSEIwbTU2NHBCSWtBWXRVQ1Y4VWhscWpGVUo5UDhLK3QzVWpObmJNdWovSzNiaU1acFhTa29kbjlmRGcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTczCWZpbGU6VXdVUHVsc2UtMS4wLjAtbGludXgtYWFyY2g2NC5ycG0KcjVGNHJzck5vNjlCR1J5MW9HaVhoeFVPd0tGTDBkU1Z3aG9QY1BPOWpISWhxcU9ibGtXRWlqcVhYTXB1Y2JFYkRQZHhvMGx0OWFyWFNkd2x6a2VPRFE9PQo=",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-linux-arm64.rpm"
+    },
+    "linux-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRR3BsYlBxMmw2c0hNVWtZck0rQitKR2tZTGFHdEw2eE0zNEFaMUVjRzBBLzlsbzB5bmNnSGxaUFNUR01PQ3A5OUVpUXllMDBjQnZ0RCtDZXhFV2NQM3MreWw4U1VETmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzc3OTczCWZpbGU6VXdVUHVsc2UtU2V0dXAtMS4wLjAtbGludXgteDY0LkFwcEltYWdlCktRN0VmU2hHZVMybUdSbkpSYzl0ZklkTGVsbkUwaG1nQk9MTXJuOGQwRldkWEZJMlZnenJBekFXSTZCSzZ4Ny9ZU2dXM2xPOVJrdWxZWlZqQXdJSkNRPT0K",
+      "url": "https://github.com/MinifyX/UwUPulse/releases/download/v1.0.0/UwUPulse-update-linux-x64.AppImage"
+    }
+  }
+}
