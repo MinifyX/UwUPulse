@@ -103,3 +103,19 @@ Texte für App Store Connect (App-ID 6828874328). Sprachen: Englisch (Primär), 
 ## Screenshots
 
 Pflichtgrößen: iPhone 6,9" (1320×2868 oder 1290×2796), Apple Watch (z. B. Ultra 3: 422×514). Aufnahme im Simulator mit Startargument `-demo` (nur DEBUG), Ablage `apple/build/screens/` (nicht im Repo).
+
+## Antwort auf Guideline 2.1 (Information Needed, 2026-10-30)
+
+Ins Feld „Notes“ der App-Review-Informationen (Englisch), zusammen mit der Bildschirmaufnahme von einem echten iPhone (iOS-Release-Version, mit gekoppelter Apple Watch):
+
+> **Screen recording (physical iPhone, latest iOS, paired Apple Watch):** <Link/Anhang>. It starts with launching the app and shows: Health permission, starting a live session from the Watch, live BPM on the iPhone, connecting a Bluetooth chest strap, camera permission and scanning the pairing QR code from the desktop app, and the BPM arriving in the desktop overlay.
+>
+> **1. Purpose and audience.** UwUPulse shows your live heart rate where you need it: streamers get a heart rate overlay in OBS, athletes and gamers can record sessions and read the value over a local API. The iPhone/Watch app measures; the free desktop app (github.com/MinifyX/UwUPulse/releases, MIT) displays and stores it. It is a local alternative to cloud services.
+>
+> **2. Setup.** No login, no account, no in-app purchases. Without a computer: open the app, allow Health access, start a session on the Apple Watch (or connect any Bluetooth LE heart rate strap); live BPM appears on the home screen. With a computer: install the desktop app, open Devices → Pair phone to show a QR code, scan it in the iPhone app (or pair by comparing a 6-digit code), then the BPM shows up in the desktop app and the OBS overlay.
+>
+> **3. External services.** None. No server, no cloud, no analytics, no third-party SDKs. Data goes only from the Watch to the iPhone (WatchConnectivity) and from the iPhone to the user's own computer over the local network (encrypted WebSocket, Bonjour discovery). Apple frameworks: HealthKit (workout session on the Watch for live heart rate; nothing is written to Health), CoreBluetooth, AVFoundation (QR scan), Network.
+>
+> **4. Regional differences.** None; the app works the same in all regions. Localized in English and German.
+>
+> **5. Regulated industry / third-party material.** Not applicable. UwUPulse is not a medical device and makes no medical claims.
