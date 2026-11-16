@@ -57,6 +57,8 @@ final class AppModel {
     enum AppTab: Hashable { case home, desktops, straps, about }
 
     private var launched = false
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var backgroundTaskEnd: Task<Void, Never>?
 
     private init() {}
 
@@ -166,7 +168,32 @@ final class AppModel {
         self.bpm = bpm
         source = src
         lastSampleAt = .now
+        holdBackgroundTime()
         links.forward(HeartRateMessage(ts: ts, bpm: bpm, src: src, dev: dev, rr: rr))
+    }
+
+    /// A background wake by the watch only lasts seconds; ask for a little more while samples
+    /// keep coming so a dropped desktop link can finish its reconnect and handshake.
+    private func holdBackgroundTime() {
+        if backgroundTask == .invalid {
+            backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Forward heart rate") { [weak self] in
+                MainActor.assumeIsolated { self?.endBackgroundTime() }
+            }
+        }
+        backgroundTaskEnd?.cancel()
+        backgroundTaskEnd = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled else { return }
+            self?.endBackgroundTime()
+        }
+    }
+
+    private func endBackgroundTime() {
+        backgroundTaskEnd?.cancel()
+        backgroundTaskEnd = nil
+        guard backgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
     }
 
     /// Recent sample (within 10 s), otherwise nil, for the UI.

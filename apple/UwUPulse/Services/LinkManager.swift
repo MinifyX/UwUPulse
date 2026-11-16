@@ -50,7 +50,11 @@ final class LinkManager {
         guard LinkLimits.isValidBPM(hr.bpm) else { return }
         var message = hr
         message.dev = hr.dev.limited()
-        for connection in connections.values { connection.send(.hr(message)) }
+        for connection in connections.values {
+            // After a background wake the socket may be gone: skip the backoff delay.
+            if !connection.isReady { connection.reconnectNow() }
+            connection.send(.hr(message))
+        }
     }
 
     func updateStatus(_ newStatus: StatusMessage) {

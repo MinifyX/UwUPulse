@@ -2,9 +2,12 @@ import Foundation
 import HealthKit
 import Observation
 import PulseKit
+import WatchConnectivity
 
 /// Runs the heart-rate workout on the watch and mirrors it to the iPhone.
 /// Nothing is saved to Health: the workout is discarded when it ends.
+/// Every sample also goes over WatchConnectivity: that wakes the iPhone app in the background
+/// (or relaunches it after it was swiped away) when the mirrored channel is gone.
 @MainActor @Observable
 final class WatchWorkoutManager: NSObject {
     static let shared = WatchWorkoutManager()
@@ -20,9 +23,18 @@ final class WatchWorkoutManager: NSObject {
     private let healthStore = HKHealthStore()
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
+    private var mirrorAttemptAt: Date?
 
     private nonisolated static let heartRateType = HKQuantityType(.heartRate)
     private nonisolated static let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+
+    override init() {
+        super.init()
+        if WCSession.isSupported() {
+            WCSession.default.delegate = self
+            WCSession.default.activate()
+        }
+    }
 
     static func configuration() -> HKWorkoutConfiguration {
         let config = HKWorkoutConfiguration()
@@ -93,6 +105,7 @@ final class WatchWorkoutManager: NSObject {
 
     private func mirror() async {
         guard let session else { return }
+        mirrorAttemptAt = .now
         do {
             try await session.startMirroringToCompanionDevice()
             isMirrored = true
@@ -116,17 +129,33 @@ final class WatchWorkoutManager: NSObject {
         builder = nil
         phase = .idle
         isMirrored = false
+        mirrorAttemptAt = nil
         bpm = nil
+        // Lets the phone leave "running" when it only heard us over WatchConnectivity.
+        sendToPhone(WorkoutChannelMessage.command(.stop).encoded())
     }
 
     private func handleHeartRate(_ value: Int, at date: Date) {
         bpm = value
         lastSampleAt = date
-        guard let session, isMirrored else { return }
+        guard let session else { return }
         let data = WorkoutChannelMessage.heartRate(WatchHeartRate(bpm: value, ts: date.unixMillis)).encoded()
-        Task {
-            do { try await session.sendToRemoteWorkoutSession(data: data) } catch { /* phone not reachable; next sample retries */ }
+        sendToPhone(data)
+        if isMirrored {
+            Task {
+                do { try await session.sendToRemoteWorkoutSession(data: data) } catch { self.isMirrored = false }
+            }
+        } else if phase == .running, mirrorAttemptAt.map({ Date.now.timeIntervalSince($0) > 10 }) ?? true {
+            // The mirror broke (phone app suspended, swiped away, out of range): re-mirroring relaunches it.
+            Task { await mirror() }
         }
+    }
+
+    /// The phone drops duplicates (same `ts`) that also arrive over the mirrored session.
+    private func sendToPhone(_ data: Data) {
+        let link = WCSession.default
+        guard WCSession.isSupported(), link.activationState == .activated, link.isReachable else { return }
+        link.sendMessage([WorkoutChannelMessage.watchConnectivityKey: data], replyHandler: nil, errorHandler: nil)
     }
 
     private func handleRemote(_ messages: [WorkoutChannelMessage]) {
@@ -162,6 +191,16 @@ extension WatchWorkoutManager: HKWorkoutSessionDelegate {
 
     nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didDisconnectFromRemoteDeviceWithError error: Error?) {
         Task { @MainActor in self.isMirrored = false }
+    }
+}
+
+extension WatchWorkoutManager: WCSessionDelegate {
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        guard let data = message[WorkoutChannelMessage.watchConnectivityKey] as? Data,
+              let decoded = WorkoutChannelMessage.decode(data) else { return }
+        Task { @MainActor in self.handleRemote([decoded]) }
     }
 }
 

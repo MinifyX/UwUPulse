@@ -5,7 +5,8 @@ import PulseKit
 import WatchConnectivity
 
 /// iPhone side of the watch workout: starts the watch app, receives the mirrored session
-/// (which keeps this app running in the background) and its heart-rate data.
+/// and its heart-rate data. The watch sends every sample over WatchConnectivity as well: that
+/// wakes this app in the background or relaunches it when the mirrored channel is gone.
 @MainActor @Observable
 final class PhoneWorkoutManager: NSObject {
     enum Phase: Equatable { case idle, starting, running, stopping }
@@ -22,6 +23,8 @@ final class PhoneWorkoutManager: NSObject {
     private let healthStore = HKHealthStore()
     private var mirroredSession: HKWorkoutSession?
     private var startTimeout: Task<Void, Never>?
+    /// Newest watch sample forwarded; the same sample arrives on both channels.
+    private var lastWatchTs: Int64 = 0
 
     var healthAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
@@ -87,6 +90,13 @@ final class PhoneWorkoutManager: NSObject {
     /// Asks the watch to end (and discard) the workout.
     func stopWorkout() async {
         guard let session = mirroredSession else {
+            // Running without a mirror (heard only over WatchConnectivity): ask the watch directly.
+            let link = WCSession.default
+            if WCSession.isSupported(), link.activationState == .activated, link.isReachable {
+                link.sendMessage(
+                    [WorkoutChannelMessage.watchConnectivityKey: WorkoutChannelMessage.command(.stop).encoded()],
+                    replyHandler: nil, errorHandler: nil)
+            }
             phase = .idle
             notify()
             return
@@ -120,8 +130,22 @@ final class PhoneWorkoutManager: NSObject {
 
     fileprivate func handle(_ messages: [WorkoutChannelMessage]) {
         for message in messages {
-            if case .heartRate(let hr) = message, LinkLimits.isValidBPM(hr.bpm) {
+            switch message {
+            case .heartRate(let hr):
+                guard LinkLimits.isValidBPM(hr.bpm), hr.ts > lastWatchTs else { continue }
+                lastWatchTs = hr.ts
+                if phase == .idle || phase == .starting {
+                    // Relaunched in the background, or the mirror has not (re)arrived yet.
+                    startTimeout?.cancel()
+                    phase = .running
+                    notify()
+                }
                 onHeartRate?(hr)
+            case .command(.stop):
+                // The watch ended the workout; only matters when no mirrored session tells us.
+                if mirroredSession == nil, phase != .idle { sessionEnded() }
+            case .command(.start):
+                break
             }
         }
     }
@@ -168,6 +192,12 @@ extension PhoneWorkoutManager: WCSessionDelegate {
     nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
         let paired = session.isPaired, installed = session.isWatchAppInstalled
         Task { @MainActor in self.updateWatch(paired: paired, installed: installed) }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        guard let data = message[WorkoutChannelMessage.watchConnectivityKey] as? Data,
+              let decoded = WorkoutChannelMessage.decode(data) else { return }
+        Task { @MainActor in self.handle([decoded]) }
     }
 
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}

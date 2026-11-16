@@ -33,6 +33,9 @@ public enum WorkoutChannelMessage: Codable, Equatable, Sendable {
         }
     }
 
+    /// Dictionary key when the message travels over WatchConnectivity instead of the mirrored session.
+    public static let watchConnectivityKey = "w"
+
     public func encoded() -> Data { (try? JSONEncoder().encode(self)) ?? Data() }
 
     public static func decode(_ data: Data) -> WorkoutChannelMessage? {
