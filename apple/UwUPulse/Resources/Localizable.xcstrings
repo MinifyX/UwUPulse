@@ -611,6 +611,16 @@
         }
       }
     },
+    "Runs as a workout on your watch, so it can count toward your Exercise ring. A chest strap does not.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läuft auf der Watch als Training und kann deshalb für deinen Trainingsring zählen. Ein Brustgurt nicht."
+          }
+        }
+      }
+    },
     "Scan QR code": {
       "localizations": {
         "de": {

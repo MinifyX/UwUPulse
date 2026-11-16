@@ -65,7 +65,13 @@ final class WatchWorkoutManager: NSObject {
         do {
             let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
             let builder = session.associatedWorkoutBuilder()
-            builder.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
+            let source = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
+            // Heart rate only: no energy or distance, so the session adds as little as possible to the
+            // Activity rings. The running session itself can still credit Exercise minutes (no API avoids that).
+            for type in source.typesToCollect where type != Self.heartRateType {
+                source.disableCollection(for: type)
+            }
+            builder.dataSource = source
             adopt(session: session, builder: builder)
             let now = Date()
             session.startActivity(with: now)

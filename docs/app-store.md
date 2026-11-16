@@ -50,7 +50,7 @@ Texte für App Store Connect (App-ID 6828874328). Sprachen: Englisch (Primär), 
 > • Open source (MIT): github.com/MinifyX/UwUPulse
 >
 > WORKS WITH
-> • Apple Watch (watchOS 11 or later)
+> • Apple Watch (watchOS 11 or later). Live heart rate on the Watch runs as a workout, so it can count toward your Exercise ring
 > • Bluetooth heart rate straps with the standard heart rate profile (e.g. Polar, Garmin, Wahoo)
 >
 > Requires the free UwUPulse desktop app on a computer in the same network.
@@ -89,7 +89,7 @@ Texte für App Store Connect (App-ID 6828874328). Sprachen: Englisch (Primär), 
 > • Open Source (MIT): github.com/MinifyX/UwUPulse
 >
 > FUNKTIONIERT MIT
-> • Apple Watch (ab watchOS 11)
+> • Apple Watch (ab watchOS 11). Der Live-Puls läuft auf der Watch als Training und kann deshalb für deinen Trainingsring zählen
 > • Bluetooth-Brustgurten mit Standard-Herzfrequenzprofil (z. B. Polar, Garmin, Wahoo)
 >
 > Benötigt die kostenlose UwUPulse-Desktop-App auf einem Computer im selben Netzwerk.

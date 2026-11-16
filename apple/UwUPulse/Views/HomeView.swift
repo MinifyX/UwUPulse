@@ -46,16 +46,21 @@ struct HomeView: View {
             } header: {
                 SectionHeader("Apple Watch")
             } footer: {
-                Button(action: model.toggleWorkout) {
-                    Label(workoutButtonTitle, systemImage: isWorkoutActive ? "stop.fill" : "play.fill")
-                        .font(UwUFont.style(.body, weight: .semibold))
-                        .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 8) {
+                    Button(action: model.toggleWorkout) {
+                        Label(workoutButtonTitle, systemImage: isWorkoutActive ? "stop.fill" : "play.fill")
+                            .font(UwUFont.style(.body, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .primaryButton()
+                    .controlSize(.large)
+                    .tint(isWorkoutActive ? Palette.danger : Palette.pinkSolid)
+                    .disabled(!canToggleWorkout)
+                    .padding(.top, 12)
+                    Text("Runs as a workout on your watch, so it can count toward your Exercise ring. A chest strap does not.")
+                        .font(UwUFont.style(.footnote))
+                        .foregroundStyle(Palette.faint)
                 }
-                .primaryButton()
-                .controlSize(.large)
-                .tint(isWorkoutActive ? Palette.danger : Palette.pinkSolid)
-                .disabled(!canToggleWorkout)
-                .padding(.top, 12)
             }
 
             Section {
